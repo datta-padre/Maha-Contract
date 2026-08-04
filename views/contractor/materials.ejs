@@ -1,0 +1,40 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo">
+                <i data-lucide="hard-hat" class="logo-icon"></i>
+                <span class="notranslate"><span>Build</span>Tender</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/contractor/dashboard"><i data-lucide="shield-check"></i> KYC Overview</a>
+                <a href="/contractor/marketplace"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
+                <a href="/contractor/materials" class="active"><i data-lucide="shopping-bag"></i> Buy Material</a>
+                <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
+                <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
+                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h2>Vendor Material Procurement</h2>
+                    <p style="color: var(--text-muted); margin-top: 0.25rem;">Order materials instantly from Verified Local Vendors within nearby Talukas (up to 3 Tal in radius).</p>
+                </div>
+            </header>
+
+            <div class="material-grid">
+                
+                <!-- Empty State until actual Vendors upload properly -->
+                <div class="material-card" style="grid-column: 1 / -1; text-align: center; border-style: dashed; padding: 4rem;">
+                     <i data-lucide="shopping-cart" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: var(--surface-border);"></i>
+                     <h3>No Materials Available Near You</h3>
+                     <p style="color: var(--text-muted);">Vendors near your registered Taluka (within 3 Tal radius) haven't published stock yet.</p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+    <script src="/js/app.js"></script>

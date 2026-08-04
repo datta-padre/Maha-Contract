@@ -1,0 +1,116 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo"><i data-lucide="building-2" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+            <nav class="sidebar-nav">
+                <a href="/vendor/dashboard"><i data-lucide="layout-dashboard"></i> Overview</a>
+                <a href="/vendor/inventory"><i data-lucide="list"></i> My Inventory</a>
+                <a href="/vendor/orders"><i data-lucide="truck"></i> Live Orders</a>
+                <a href="/vendor/payments"><i data-lucide="wallet"></i> Payments</a>
+                <a href="/vendor/profile" class="active"><i data-lucide="user"></i> Store Profile</a>
+                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h2>Store Profile Settings</h2>
+                    <p style="color: var(--text-muted);">Manage your Material Vendor shop details and address.</p>
+                </div>
+            </header>
+
+            <% if (typeof user !== 'undefined' && user) { %>
+            <div class="profile-header">
+                <div class="profile-avatar"><i data-lucide="store"></i></div>
+                <div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.25rem;"><%= user.username %></h3>
+                    <p style="color: var(--text-muted); margin-bottom: 0.5rem;"><%= user.email %></p>
+                    <span class="status-badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">
+                        <i data-lucide="check-circle" style="width:14px; display:inline; vertical-align:middle;"></i>
+                        <%= user.role %>
+                    </span>
+                </div>
+            </div>
+
+            <form class="tender-form" action="/vendor/update-profile" method="post" style="background: rgba(15, 23, 42, 0.4); padding: 2rem; border-radius: 12px; border: 1px solid var(--surface-border);">
+                <h3 style="margin-bottom: 1.5rem; font-family: 'Outfit'; color: var(--accent);">Business Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Store Name</label>
+                        <input type="text" name="username" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.username %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Email</label>
+                        <input type="email" name="email" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.email %>" required>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Store Phone Number</label>
+                        <input type="tel" name="mobile" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.mobile %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>User ID</label>
+                        <input type="text" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="" readonly>
+                    </div>
+                </div>
+
+                <h3 style="margin: 2.5rem 0 1.5rem; font-family: 'Outfit'; color: var(--accent);">Location Details</h3>
+                <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label>Street Address</label>
+                        <input type="text" name="address" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.address || '' %>" placeholder="Flat, House no., Building, Company, Apartment">
+                    </div>
+                </div>
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="form-group">
+                        <label>Taluka (Tal)</label>
+                        <input type="text" name="taluka" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.taluka || '' %>" placeholder="e.g. Haveli">
+                    </div>
+                    <div class="form-group">
+                        <label>District (Dist)</label>
+                        <input type="text" name="district" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.district || '' %>" placeholder="e.g. Pune">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <select name="state" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;">
+                            <option value="" <%= !user.state ? 'selected' : '' %>>Select State</option>
+                            <option value="Maharashtra" <%= user.state === 'Maharashtra' ? 'selected' : '' %>>Maharashtra</option>
+                            <option value="Gujarat" <%= user.state === 'Gujarat' ? 'selected' : '' %>>Gujarat</option>
+                            <option value="Karnataka" <%= user.state === 'Karnataka' ? 'selected' : '' %>>Karnataka</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pincode</label>
+                        <input type="text" name="pincode" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.pincode || '' %>" placeholder="e.g. 411001">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;">
+                    <i data-lucide="save" style="display:inline; width:18px; vertical-align:middle; margin-right:5px;"></i> Update Business Card
+                </button>
+            </form>
+
+            <h3 style="margin: 2.5rem 0 1.5rem; font-family: 'Outfit'; color: var(--accent);">Account Info</h3>
+            <div class="form-grid" style="margin-bottom: 2rem;">
+                <div style="background: var(--surface); border: 1px solid var(--surface-border); padding: 1.5rem; border-radius: 8px;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.25rem;">Member Since</p>
+                    <p style="margin: 0; font-weight: 600;"><%= user.created_at ? new Date(user.created_at).toLocaleDateString('en-IN') : 'N/A' %></p>
+                </div>
+                <div style="background: var(--surface); border: 1px solid var(--surface-border); padding: 1.5rem; border-radius: 8px;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.25rem;">Account Role</p>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;"><%= user.role %></p>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="empty-state">
+                <h3>User not found</h3>
+                <p>Please login again to view your profile.</p>
+                <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Go to Login</a>
+            </div>
+            <% } %>
+        </main>
+    </div>
+    <script src="/js/app.js"></script>
+    <script>lucide.createIcons();</script>

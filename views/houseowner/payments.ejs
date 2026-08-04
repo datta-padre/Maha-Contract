@@ -1,0 +1,37 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span
+                    class="notranslate"><span>Build</span>Tender</span></div>
+            <nav class="sidebar-nav">
+                <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
+                <a href="/houseowner/post"><i data-lucide="file-plus"></i> Post Tender Details</a>
+                <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
+                <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
+                <a href="/houseowner/payments" class="active"><i data-lucide="wallet"></i> Payment & Receipts</a>
+                <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
+                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h2>Financial Tracking & Receipts</h2>
+                    <p style="color: var(--text-muted);">Track milestone payouts sent to your Contractor through the
+                        platform.</p>
+                </div>
+            </header>
+
+            <div class="empty-state">
+                <i data-lucide="receipt"
+                    style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--surface-border);"></i>
+                <h3>No Transactions Found</h3>
+                <p>You have not made any phase-based payments to a contractor yet.</p>
+            </div>
+        </main>
+    </div>
+    <script src="/js/app.js"></script>
+    <script>lucide.createIcons();</script>
+<%- include('../partials/footer') %>

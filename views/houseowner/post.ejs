@@ -1,0 +1,294 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+            <nav class="sidebar-nav">
+                <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
+                <a href="/houseowner/post" class="active"><i data-lucide="file-plus"></i> Post Tender Details</a>
+                <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
+                <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
+                <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
+                <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
+                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <div class="progress-pill"><i data-lucide="sparkles"></i> Guided tender builder</div>
+                    <h2>House Requirements Blueprint</h2>
+                    <p>Submit your exact property specifications to generate an accurate architectural tender.</p>
+                </div>
+                <div class="header-highlight">
+                    <span>Step 1</span>
+                    <strong>Capture project details</strong>
+                </div>
+            </header>
+
+            <div class="progress-card">
+                <div class="progress-card-content">
+                    <div>
+                        <p class="progress-label">Project readiness</p>
+                        <h3>Build a clear, competitive tender</h3>
+                    </div>
+                    <div class="progress-steps">
+                        <span class="progress-step active">Requirements</span>
+                        <span class="progress-step">Documents</span>
+                        <span class="progress-step">Submit</span>
+                    </div>
+                </div>
+            </div>
+
+            <% if (typeof success !== 'undefined' && success) { %>
+                <div class="info-note" style="margin-bottom: 1.25rem; border-left: 4px solid var(--primary);">
+                    <p><i data-lucide="check-circle"></i> <strong>Tender request received.</strong> Your details have been captured and will be reviewed by the platform team.</p>
+                </div>
+            <% } %>
+
+            <form id="tender-form" action="/houseowner/save-tender" method="post" enctype="multipart/form-data" class="tender-form">
+                <!-- 1. Physical Plot Details -->
+                <h3 class="form-section-title"><i data-lucide="map" style="display:inline; width:20px;"></i> 1. Land & Geological Inputs</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Plot Area (Sq.m / Sq.ft / Guntha)</label>
+                        <input type="text" id="prop-area" name="plotArea" placeholder="e.g. 1500 Sq.ft" value="<%= (typeof formData !== 'undefined' && formData.plotArea) ? formData.plotArea : '' %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type of Soil</label>
+                        <select class="custom-select" name="soilType" required>
+                            <option value="">Select Soil Type</option>
+                            <option>Black Cotton</option>
+                            <option>Red Soil</option>
+                            <option>Sandy</option>
+                            <option>Mixed</option>
+                            <option>Other / Unknown</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Plot Location (Google Maps Pin Link)</label>
+                        <input type="url" name="plotLocation" placeholder="https://maps.google.com/..." value="<%= (typeof formData !== 'undefined' && formData.plotLocation) ? formData.plotLocation : '' %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type of Construction Code</label>
+                        <select class="custom-select" name="constructionCode" required>
+                            <option value="RCC">RCC Structure (Pillars & Beams)</option>
+                            <option value="LoadBearing">Load Bearing Structure (Brick Walls)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 2. Logistics & Architectural Data -->
+                <h3 class="form-section-title"><i data-lucide="folder-open" style="display:inline; width:20px;"></i> 2. Blueprints & Materials</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Will you personally provide construction materials?</label>
+                        <select class="custom-select" name="materialsProvided" required>
+                            <option value="no">No, Contractor must provide materials</option>
+                            <option value="yes">Yes, I will procure my own materials</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Do you have a finalized House Plan?</label>
+                        <select class="custom-select" name="finalizedPlan" id="finalizedPlan" required>
+                            <option value="no">No, I need the contractor to design it</option>
+                            <option value="yes">Yes, I have CAD/PDF architectural plans</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Interactive Upload Nodes -->
+                <div id="plan-upload" class="form-group" style="display:none; margin-bottom: 1.5rem;">
+                    <label>Upload Architectural Plan (.PDF / .DWG) <span style="color:var(--primary);">*</span></label>
+                    <div class="upload-zone" style="padding: 1.5rem; cursor: pointer;" onclick="this.querySelector('input').click()">
+                        <input type="file" name="architecturalPlan" accept=".pdf,.dwg" style="display:none;" onchange="this.closest('.upload-zone').querySelector('.file-label').textContent = 'Attached: ' + this.files[0].name; this.closest('.upload-zone').style.borderColor = '#22c55e';">
+                        <i data-lucide="upload-cloud"></i>
+                        <p class="file-label">Drag & Drop your CAD/PDF here or click to browse.</p>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label>Upload Official Plot Documents (7/12, Ownership Proof)</label>
+                    <div class="upload-zone" style="padding: 1.5rem; cursor: pointer;" onclick="this.querySelector('input').click()">
+                        <input type="file" name="Plot_documents" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none;" onchange="this.closest('.upload-zone').querySelector('.file-label').textContent = this.files.length + ' file(s) selected: ' + Array.from(this.files).map(f => f.name).join(', '); this.closest('.upload-zone').style.borderColor = '#22c55e';">
+                        <i data-lucide="file-badge"></i>
+                        <p class="file-label">Upload property ownership files to pass Verify Admin check.</p>
+                    </div>
+                </div>
+
+                <!-- 3. Granular Construction Requirements -->
+                <h3 class="form-section-title">
+                    <i data-lucide="hammer" style="display:inline; width:20px;"></i>
+                    3. Ancillary Construction Requirements
+                </h3>
+                
+                <div class="checkbox-grid">
+                    <label class="checkbox-group">
+                        <input type="checkbox" name="ancillary_requirements" value="Interior & Furniture Work">
+                        <span>Interior & Furniture Work</span>
+                    </label>
+                
+                    <label class="checkbox-group">
+                        <input type="checkbox" name="ancillary_requirements" value="Electrical Wiring & Fitting">
+                        <span>Electrical Wiring & Fitting</span>
+                    </label>
+                
+                    <label class="checkbox-group">
+                        <input type="checkbox" name="ancillary_requirements" value="Colouring & Painting">
+                        <span>Colouring & Painting</span>
+                    </label>
+                
+                    <label class="checkbox-group">
+                        <input type="checkbox" name="ancillary_requirements" value="Plumbing & Layout Pipes">
+                        <span>Plumbing & Layout Pipes</span>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>External Works Required?</label>
+                        <select class="custom-select" name="externalWorks" required>
+                            <option>No Additional External Works</option>
+                            <option>Gate Installation Only</option>
+                            <option>Parking & Garden Area Leveling</option>
+                            <option>Gate, Parking & Garden (All)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Boundary Wall Type</label>
+                        <select class="custom-select" name="boundaryWallType" required>
+                            <option>No Boundary Wall</option>
+                            <option>Cement / Concrete Wall</option>
+                            <option>Metal Wire Fencing</option>
+                            <option>Brick Wall</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. Budget & Financial Anchors -->
+                <h3 class="form-section-title"><i data-lucide="banknote" style="display:inline; width:20px;"></i> 4. Financial Parameters & Scope</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Maximum Out-of-Pocket Budget (₹)</label>
+                        <input type="number" name="budget" placeholder="e.g. 5000000" value="<%= (typeof formData !== 'undefined' && formData.budget) ? formData.budget : '' %>" style="font-family: monospace; font-size: 1.1rem; letter-spacing: 1px;" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Required BHK Configuration</label>
+                        <select id="prop-bhk" class="custom-select" name="bhk">
+                            <option>1 BHK</option>
+                            <option>2 BHK</option>
+                            <option selected>3 BHK</option>
+                            <option>4+ BHK / Villa</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Number of Floors (G + X)</label>
+                        <input type="number" name="floors" placeholder="e.g. Target: 2 Floors" value="<%= (typeof formData !== 'undefined' && formData.floors) ? formData.floors : '' %>" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Expected Time of Construction (Months)</label>
+                        <input type="number" name="constructionTime" placeholder="e.g. 12" value="<%= (typeof formData !== 'undefined' && formData.constructionTime) ? formData.constructionTime : '' %>" min="1" style="width: 100%; padding: 0.75rem 1rem; background: transparent; border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-family: inherit; font-size: 1rem;" required>
+                    </div>
+                </div>
+
+                <div class="form-group mt-4">
+                    <label>Special Instructions / Custom Notes for Builders</label>
+                    <textarea class="custom-select" name="specialInstructions" rows="4" placeholder="Enter any extra details or specific material choices (e.g. specifically prefer Ambuja Cement or premium tile requirements)."><%= (typeof formData !== 'undefined' && formData.specialInstructions) ? formData.specialInstructions : '' %></textarea>
+                </div>
+
+                <!-- 5. Legal Authentication -->
+                <h3 class="form-section-title"><i data-lucide="pen-tool" style="display:inline; width:20px;"></i> 5. Digital Signature Authorization</h3>
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label>House Owner Digital Signature (Upload PNG/JPG) <span style="color:var(--primary);">*</span></label>
+                    <div class="upload-zone" style="padding: 1.5rem; text-align: center; border: 1px dashed var(--surface-border); border-radius: 12px; cursor: pointer;" onclick="this.querySelector('input').click()">
+                        <input type="file" name="House_Owner_Digital_Signature" accept=".png,.jpg,.jpeg" required style="display:none;" onchange="this.closest('.upload-zone').querySelector('.file-label').textContent = 'Attached: ' + this.files[0].name; this.closest('.upload-zone').style.borderColor = '#22c55e';">
+                        <i data-lucide="pen-tool" style="width: 32px; height: 32px; color: var(--text-muted); margin-bottom: 0.5rem; display: inline-block;"></i>
+                        <p class="file-label" style="color: var(--text-muted);">Click to upload your official digital signature for binding the tender.</p>
+                    </div>
+                </div>
+
+                <!-- Submit / Pay Button -->
+                <div class="info-note">
+                    <p><i data-lucide="info"></i> <strong>Note:</strong> A standard platform mapping fee is required to convert your blueprint into a legally bound tender code.</p>
+                </div>
+                <button type="button" onclick="payNow()" class="btn-primary full-width large hero-cta">
+                    <i data-lucide="send"></i> Generate Technical Tender File (Pay ₹5,999 Fee)
+                </button>
+
+                <!-- hidden payment fields (filled after Razorpay success) -->
+                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+            </form>
+
+        </main>
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Show / hide architectural plan upload
+        document.getElementById('finalizedPlan').addEventListener('change', function () {
+            var box = document.getElementById('plan-upload');
+            box.style.display = this.value === 'yes' ? 'block' : 'none';
+        });
+
+        // Pay Now → create order → open Razorpay → save tender
+        async function payNow() {
+            var form = document.getElementById('tender-form');
+
+            // check required form fields first
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // 1) create order on server
+            var orderRes = await fetch('/houseowner/create-order', { method: 'POST' });
+            var orderData = await orderRes.json();
+
+            if (!orderData.success) {
+                alert(orderData.message || 'Could not start payment. Form kept as is.');
+                return;
+            }
+
+            // 2) open Razorpay checkout
+            var options = {
+                key: orderData.key,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: 'BuildTender',
+                description: 'Tender Platform Mapping Fee',
+                order_id: orderData.order_id,
+                prefill: {
+                    name: 'House Owner',
+                    email: 'owner@example.com',
+                    contact: '9999999999'
+                },
+                theme: {
+                    color: '#ff7a00'
+                },
+                // 3) after payment success → submit form to save-tender
+                handler: function (response) {
+                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                    form.submit();
+                }
+            };
+
+            var rzp = new Razorpay(options);
+
+            rzp.on('payment.failed', function () {
+                alert('Payment failed. Tender was not saved. Your form data is still here.');
+            });
+
+            rzp.open();
+        }
+    </script>

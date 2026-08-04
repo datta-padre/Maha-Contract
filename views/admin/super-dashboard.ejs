@@ -1,0 +1,290 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo">
+                <i data-lucide="shield" class="logo-icon"></i>
+                <span style="color: var(--text-main);">Super</span>Admin
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin/super-dashboard" class="active"><i data-lucide="pie-chart"></i> System Metrics</a>
+                <a href="/admin/super-staff"><i data-lucide="fingerprint"></i> Staff Management</a>
+                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header" style="flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2>Super Admin Hub</h2>
+                    <p style="color: var(--text-muted); margin-top: 0.25rem;">God Mode: Absolute Control over Nodes, Finance, and Verifications.</p>
+                </div>
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--surface-border); border-radius: 8px; padding: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button class="tab-btn active" onclick="switchTab('financeTab', this)">💰 Payment Hub</button>
+                    <button class="tab-btn" onclick="switchTab('operationsTab', this)">⚙️ Admin Workspace</button>
+                    <button class="tab-btn" onclick="switchTab('directoryTab', this)">👥 Global Directory</button>
+                </div>
+            </header>
+
+            <!-- TAB 1: Payment & Finance Hub -->
+            <div id="financeTab" class="tab-content" style="display: block;">
+                <!-- Global Revenue Metrics -->
+                <div class="analytics-grid">
+                    <div class="metric-card">
+                        <i data-lucide="banknote" style="color: #22c55e;"></i>
+                        <div>
+                            <div class="metric-value" id="db-revenue">₹18,774</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Total Verification Revenue (Live)</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i data-lucide="building" style="color: var(--accent);"></i>
+                        <div>
+                            <div class="metric-value" id="db-tender-value">₹24,00,000</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Estimated Construction Base Value</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; color:#fff;">Live Payment Transactions</h3>
+                    <table style="width:100%; border-collapse: collapse; text-align: left;">
+                        <tr style="border-bottom: 1px solid var(--surface-border); color:var(--text-muted);">
+                            <th style="padding:1rem 0;">Transaction ID</th>
+                            <th>Role / Name</th>
+                            <th>Purpose</th>
+                            <th>Amount (inc GST)</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--surface-border);">
+                            <td style="padding:1rem 0;">TXN-8849-OWNR</td>
+                            <td>Owner | Mahesh P.</td>
+                            <td>Tender Listing Fee</td>
+                            <td>₹7,078</td>
+                            <td><span style="color:#22c55e;">Cleared</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--surface-border);">
+                            <td style="padding:1rem 0;">TXN-9912-CONT</td>
+                            <td>Contractor | Ramesh Build</td>
+                            <td>Advance KYC Fee</td>
+                            <td>₹5,900</td>
+                            <td><span style="color:#22c55e;">Cleared</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: Admin Workspace (All Admin Work Embedded) -->
+            <div id="operationsTab" class="tab-content" style="display: none;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    
+                    <a href="/admin/verify-dashboard" style="text-decoration:none; color:inherit; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:block;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#f87171;"><i data-lucide="shield-check" style="display:inline; width:20px; vertical-align:middle;"></i> Verify Admin</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Pending approvals, verified records, and verification queue.</p>
+                        <span style="color:#38bdf8; font-size:0.9rem;">Open module →</span>
+                    </a>
+
+                    <a href="/admin/budget-dashboard" style="text-decoration:none; color:inherit; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:block;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#38bdf8;"><i data-lucide="calculator" style="display:inline; width:20px; vertical-align:middle;"></i> Budget Admin</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Estimate tenders, manage completion dates, and forward budgets.</p>
+                        <span style="color:#38bdf8; font-size:0.9rem;">Open module →</span>
+                    </a>
+
+                    <a href="/admin/tender-dashboard" style="text-decoration:none; color:inherit; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:block;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#a855f7;"><i data-lucide="upload" style="display:inline; width:20px; vertical-align:middle;"></i> Tender Admin</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Publish tenders, review reports, and assign contracts.</p>
+                        <span style="color:#38bdf8; font-size:0.9rem;">Open module →</span>
+                    </a>
+
+                    <a href="/admin/quality-team-dashboard" style="text-decoration:none; color:inherit; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:block;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#22c55e;"><i data-lucide="clipboard-check" style="display:inline; width:20px; vertical-align:middle;"></i> Quality Team</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Material audits and construction quality tracking.</p>
+                        <span style="color:#38bdf8; font-size:0.9rem;">Open module →</span>
+                    </a>
+
+                    <a href="/admin/partner-dashboard" style="text-decoration:none; color:inherit; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:block;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#fb923c;"><i data-lucide="users" style="display:inline; width:20px; vertical-align:middle;"></i> Partners</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Sub-contractor and partner logistics control.</p>
+                        <span style="color:#38bdf8; font-size:0.9rem;">Open module →</span>
+                    </a>
+
+                    <a href="/admin/super-staff" style="text-decoration:none; color:inherit; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:block;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#facc15;"><i data-lucide="fingerprint" style="display:inline; width:20px; vertical-align:middle;"></i> Staff Management</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Hire, reset passwords, and manage admin access.</p>
+                        <span style="color:#38bdf8; font-size:0.9rem;">Open module →</span>
+                    </a>
+
+                    <!-- Verify Admin Work Block -->
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#f87171;"><i data-lucide="shield-check" style="display:inline; width:20px; vertical-align:middle;"></i> Verify Admin Queue</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">1 Pending Contractor Verification.</p>
+                        <div style="background:rgba(0,0,0,0.3); border:1px solid var(--surface-border); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong>Ramesh Build</strong>
+                                <div style="font-size:0.8rem; color:var(--text-muted);">All Documents Uploaded. Fee Paid.</div>
+                            </div>
+                            <button onclick="alert('Super Admin Verified Contractor!');" class="btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#22c55e;">Direct Verify</button>
+                        </div>
+                    </div>
+
+                    <!-- Budget Admin Work Block -->
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#38bdf8;"><i data-lucide="calculator" style="display:inline; width:20px; vertical-align:middle;"></i> Budget Admin Queue</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">1 Tender awaits Cost Estimation.</p>
+                        <div style="background:rgba(0,0,0,0.3); border:1px solid var(--surface-border); padding:1rem; border-radius:8px;">
+                            <strong>#TEND001: 3BHK Resident Villa</strong>
+                            <div style="display:flex; gap:0.5rem; margin-top:0.8rem;">
+                                <input type="number" placeholder="Est. Cost" style="width:100%; padding:0.4rem; border-radius:4px; border:none; background:rgba(255,255,255,0.1); color:#fff;">
+                                <button onclick="alert('Super Admin Processed Estimator Cost!')" class="btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tender Admin Work Block -->
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color:#a855f7;"><i data-lucide="upload" style="display:inline; width:20px; vertical-align:middle;"></i> Tender Admin Ops</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1rem;">Global Tender Publishing Node.</p>
+                        <div style="background:rgba(0,0,0,0.3); border:1px dashed var(--surface-border); padding:2rem; text-align:center; border-radius:8px; cursor:pointer;" onclick="alert('Tender Uploaded directly by Super Admin')">
+                            <i data-lucide="folder-plus" style="margin-bottom:0.5rem; color:var(--text-muted);"></i>
+                            <div>Upload & Assign New Tender manually</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TAB 3: Global User Directory -->
+            <div id="directoryTab" class="tab-content" style="display: none;">
+                <div style="background: rgba(15,23,42,0.6); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--surface-border);">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items:center; flex-wrap:wrap;">
+                        <div style="flex:1; position:relative;">
+                            <i data-lucide="search" style="position:absolute; left:1rem; top:0.8rem; color:var(--text-muted); width:18px;"></i>
+                            <input type="text" id="superSearchInput" placeholder="Live Search any User (Name, ID, Role)..." style="width:100%; padding: 0.8rem 1rem 0.8rem 2.5rem; border-radius:8px; background:rgba(0,0,0,0.4); border:1px solid var(--surface-border); color:#fff;">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;" id="partitionButtons">
+                            <button class="partition-btn active" onclick="filterPartition('All')">All</button>
+                            <button class="partition-btn" onclick="filterPartition('Owner')">Owners</button>
+                            <button class="partition-btn" onclick="filterPartition('Contractor')">Contractors</button>
+                            <button class="partition-btn" onclick="filterPartition('Vendor')">Vendors</button>
+                        </div>
+                    </div>
+
+                    <table style="width:100%; border-collapse: collapse; text-align: left;" id="directoryTable">
+                        <tr style="border-bottom: 1px solid var(--surface-border); color:var(--text-muted);">
+                            <th style="padding:1rem 0;">System ID</th>
+                            <th>Role Partition</th>
+                            <th>Full Name</th>
+                            <th>Contact Context</th>
+                            <th>Status Matrix</th>
+                        </tr>
+                        <tr class="dir-row" data-role="Owner">
+                            <td style="padding:1rem 0;">#1001</td>
+                            <td><span style="background:rgba(56,189,248,0.1); color:#38bdf8; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem;">Owner</span></td>
+                            <td>Mahesh Patil</td>
+                            <td>mahesh@test.com</td>
+                            <td><i data-lucide="check-circle" style="color:#22c55e; width:18px;"></i> Active</td>
+                        </tr>
+                        <tr class="dir-row" data-role="Contractor">
+                            <td style="padding:1rem 0;">#2001</td>
+                            <td><span style="background:rgba(234,179,8,0.1); color:#eab308; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem;">Contractor</span></td>
+                            <td>Ramesh Builders</td>
+                            <td>+91 99999 00000</td>
+                            <td><i data-lucide="clock" style="color:#f59e0b; width:18px;"></i> Pending Review</td>
+                        </tr>
+                        <tr class="dir-row" data-role="Vendor">
+                            <td style="padding:1rem 0;">#3001</td>
+                            <td><span style="background:rgba(168,85,247,0.1); color:#a855f7; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem;">Vendor</span></td>
+                            <td>UltraTech Depot (Vashi)</td>
+                            <td>vendor@ultratech.tst</td>
+                            <td><i data-lucide="check-circle" style="color:#22c55e; width:18px;"></i> Activated System</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // Custom Layout Styling exclusively for the Tab Interface and Partitions
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .tab-btn { background: transparent; color: var(--text-muted); border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; }
+            .tab-btn.active { background: var(--primary); color: #fff; }
+            .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); }
+            .partition-btn { background: rgba(0,0,0,0.4); border: 1px solid var(--surface-border); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; transition: 0.2s; }
+            .partition-btn.active { border-color: var(--primary); color: #fff; background: rgba(var(--primary-rgb), 0.1); }
+        `;
+        document.head.appendChild(style);
+
+        // Core Functions
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            btn.classList.add('active');
+        }
+
+        // Feature: Global Live Partition Filtering
+        function filterPartition(roleType) {
+            // Update active state of buttons
+            const btns = document.getElementById('partitionButtons').children;
+            for(let btn of btns) {
+                if(btn.innerText.includes(roleType)) {
+                    btn.classList.add('active');
+                } else if(roleType === 'All' && btn.innerText === 'All') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+
+            // Filter Matrix Rows
+            const rows = document.querySelectorAll('.dir-row');
+            rows.forEach(row => {
+                if(roleType === 'All') {
+                    row.style.display = '';
+                } else {
+                    if(row.getAttribute('data-role') === roleType) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Live Fetch from Backend Database
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/system-stats');
+                const data = await res.json();
+                
+                if (data.success) {
+                    // Injecting DB variables into the frontend
+                    // Let's assume ₹10,000 avg revenue per user proxy and ₹24,00,000 avg tender proxy
+                    document.getElementById('db-revenue').innerText = '₹' + (data.stats.users * 12775 + data.stats.tenders * 5999).toLocaleString();
+                    document.getElementById('db-tender-value').innerText = '₹' + (data.stats.tenders * 2400000).toLocaleString();
+                }
+            } catch(e) {
+                console.log("DB Stats Fetch Error. Server might be offline. Loading cached static metrics.", e);
+            }
+        });
+
+        // Live Search implementation natively on directory
+        document.getElementById('superSearchInput').addEventListener('input', function(e) {
+            let term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('.dir-row');
+            rows.forEach(row => {
+                if(row.innerText.toLowerCase().includes(term)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+<%- include('../partials/footer') %>

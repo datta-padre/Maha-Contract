@@ -1,0 +1,155 @@
+<%- include('../partials/header') %>
+<%
+    var approved = (typeof approvedUsers !== 'undefined' && Array.isArray(approvedUsers)) ? approvedUsers : [];
+
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (!amount && amount !== 0) return '—';
+        return '₹' + Number(amount).toLocaleString('en-IN');
+    }
+    function payBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
+        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
+        return { color: '#eab308', label: 'Pending' };
+    }
+    function docUrl(file) {
+        if (!file || !String(file).trim()) return '';
+        return '/admin/view-doc?file=' + encodeURIComponent(String(file).trim());
+    }
+    function kycDocs(u) {
+        return [
+            { label: 'Photo', file: u.profile_picture },
+            { label: 'Signature', file: u.digital_signature },
+            { label: 'Qualification', file: u.qualifications },
+            { label: 'License', file: u.licenses },
+            { label: 'Aadhaar', file: u.adhar_card },
+            { label: 'PAN', file: u.pan_card },
+            { label: 'GST', file: u.gst_certificate },
+            { label: 'Income', file: u.insurance_certificate },
+            { label: 'NCL', file: u.non_crime_certificate },
+            { label: 'Police', file: u.police_ncertificate },
+            { label: 'Portfolio', file: u.previous_work },
+            { label: 'Stamp', file: u.legal_agreement }
+        ].filter(function (d) { return d.file && String(d.file).trim(); });
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <div class="logo sidebar-logo"><i data-lucide="shield-check" class="logo-icon"></i><span style="color:#ef4444;">Admin</span>Desk</div>
+        <nav class="sidebar-nav">
+            <a href="/admin/verify-dashboard"><i data-lucide="layout-dashboard"></i> Overview</a>
+            <a href="/admin/pending-users"><i data-lucide="clock"></i> Pending Queue</a>
+            <a href="/admin/verified" class="active"><i data-lucide="database"></i> Verified Database</a>
+            <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Verified Database</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Approved contractor KYC records from the database.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Verified</span>
+                <strong><%= approved.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div style="margin-bottom: 1.5rem; position: relative;">
+            <i data-lucide="search" style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, email, phone or KYC ID..."
+                   style="width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: 12px; background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); color: white; font-size: 1rem;">
+        </div>
+
+        <% if (approved.length === 0) { %>
+        <div class="empty-state">
+            <i data-lucide="database" style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--surface-border);"></i>
+            <h3>No verified contractors yet</h3>
+            <p>Approved KYC records will appear here after verification.</p>
+        </div>
+        <% } else { %>
+        <div style="overflow-x: auto; border: 1px solid var(--surface-border); border-radius: 12px; background: rgba(15,23,42,0.45);">
+            <table style="width:100%; border-collapse: collapse; min-width: 980px;">
+                <thead>
+                    <tr style="text-align:left; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em;">
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">ID</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Name</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Email</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Phone</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Specialization</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Payment</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Documents</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% approved.forEach(function (u) {
+                        var pay = payBadge(u.payment_status);
+                        var docs = kycDocs(u);
+                        var searchKey = [u.kyc_id, u.full_name, u.email, u.phone, u.specialization].join(' ').toLowerCase();
+                    %>
+                    <tr class="verified-row" data-search="<%= searchKey %>">
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">#<%= u.kyc_id %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.full_name) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.email) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.phone) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.specialization) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">
+                            <span style="color: <%= pay.color %>;"><%= pay.label %></span>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem;">
+                                <%= safe(u.contractor_payment_status) %> · <%= money(u.payment_amount) %>
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">
+                            <% if (docs.length === 0) { %>
+                            <span style="color: var(--text-muted);">—</span>
+                            <% } else { %>
+                            <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">
+                                <% docs.forEach(function (doc) { %>
+                                <a href="<%= docUrl(doc.file) %>" target="_blank" rel="noopener"
+                                   style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.5rem;border-radius:6px;border:1px solid var(--surface-border);background:rgba(255,255,255,0.03);color:var(--accent);text-decoration:none;font-size:0.75rem;">
+                                    <%= doc.label %>
+                                </a>
+                                <% }) %>
+                            </div>
+                            <% } %>
+                        </td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border); color: #22c55e; white-space: nowrap;">
+                            <i data-lucide="check-circle" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> Approved
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function (e) {
+            var term = e.target.value.toLowerCase();
+            document.querySelectorAll('.verified-row').forEach(function (row) {
+                var hay = (row.getAttribute('data-search') || '').toLowerCase();
+                row.style.display = hay.indexOf(term) !== -1 ? '' : 'none';
+            });
+        });
+    }
+</script>

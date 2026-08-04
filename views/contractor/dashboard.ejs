@@ -1,0 +1,684 @@
+<%- include('../partials/header') %>
+<%
+    var fd = (typeof formData !== 'undefined' && formData) ? formData : {};
+    var docs = (typeof docs !== 'undefined' && docs) ? docs : {};
+    var completed = (typeof completedPayments !== 'undefined' && Array.isArray(completedPayments)) ? completedPayments : [];
+    var allDone = (typeof allPaymentsDone !== 'undefined') ? !!allPaymentsDone : (completed.length === 3);
+
+    function v(key) {
+        return (fd[key] !== undefined && fd[key] !== null && fd[key] !== '') ? fd[key] : '';
+    }
+    function selected(key, value) {
+        return String(v(key)) === String(value) ? 'selected' : '';
+    }
+    function checked(key) {
+        return fd[key] ? 'checked' : '';
+    }
+    function hasDoc(key) {
+        return !!(docs[key] && String(docs[key]).trim());
+    }
+    function chosenText(key, emptyText) {
+        if (!hasDoc(key)) return emptyText || 'Click to upload';
+        if (key === 'portfolioImages') {
+            return String(docs[key]).split(',').filter(Boolean).length + ' file(s) on record';
+        }
+        return 'File on record · tap to replace';
+    }
+    function isPaid(type) {
+        return completed.indexOf(type) !== -1;
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+        <nav class="sidebar-nav">
+            <a href="/contractor/dashboard" class="active"><i data-lucide="shield-check"></i> KYC Overview</a>
+            <a href="/contractor/marketplace"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
+            <a href="/contractor/materials"><i data-lucide="shopping-bag"></i> Buy Material</a>
+            <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
+            <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
+            <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <div class="progress-pill"><i data-lucide="shield-check"></i> Contractor verification</div>
+                <h2>KYC & Profile Registration</h2>
+                <p>Complete Profile, Documents, and Payment to unlock bidding.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Due today</span>
+                <strong>₹5,900</strong>
+            </div>
+        </header>
+
+        <div class="progress-card kyc-progress-card">
+            <div class="progress-card-content">
+                <div>
+                    <p class="progress-label">Verification progress</p>
+                    <h3 id="kyc-step-title">Step 1 of 3 · Profile</h3>
+                </div>
+                <div class="progress-steps" role="tablist" aria-label="KYC steps">
+                    <button type="button" class="progress-step active" data-goto="1" aria-current="step">1 · Profile</button>
+                    <button type="button" class="progress-step" data-goto="2">2 · Documents</button>
+                    <button type="button" class="progress-step" data-goto="3">3 · Payment</button>
+                </div>
+            </div>
+            <div class="kyc-progress-bar" aria-hidden="true">
+                <span id="kyc-progress-fill" style="width:33%"></span>
+            </div>
+        </div>
+
+        <% if (typeof success !== 'undefined' && success) { %>
+        <div class="alert-banner alert-success" role="status">
+            <i data-lucide="check-circle"></i>
+            <div>
+                <strong>KYC profile submitted.</strong>
+                <p>Our team will review your documents shortly.</p>
+            </div>
+        </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" role="alert">
+            <i data-lucide="alert-circle"></i>
+            <div>
+                <strong>Could not submit</strong>
+                <p><%= error %></p>
+            </div>
+        </div>
+        <% } %>
+
+        <form id="kyc-form" class="tender-form kyc-form" action="/contractor/kyc" method="post" enctype="multipart/form-data" novalidate>
+
+            <!-- ========== STEP 1: PROFILE ========== -->
+            <section class="kyc-step is-active" data-step="1">
+                <div class="kyc-step-header">
+                    <h3 class="form-section-title" style="margin-top:0;">
+                        <i data-lucide="user"></i> Profile details
+                    </h3>
+                    <p class="kyc-step-hint">Use details exactly as on your government ID.</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fullName">Full Legal Name <span class="req">*</span></label>
+                        <input type="text" id="fullName" name="fullName" class="custom-input"
+                               placeholder="e.g. Ramesh Kumar" value="<%= v('fullName') %>" required>
+                        <span class="field-hint">As printed on Aadhaar / PAN</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email ID <span class="req">*</span></label>
+                        <input type="email" id="email" name="email" class="custom-input"
+                               placeholder="ramesh@example.com" value="<%= v('email') %>" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mobile">Mobile Number <span class="req">*</span></label>
+                        <input type="tel" id="mobile" name="mobile" class="custom-input"
+                               placeholder="+91 XXXXX XXXXX" pattern="[0-9+\-\s]{10,15}"
+                               value="<%= v('mobile') %>" required>
+                        <span class="field-hint">WhatsApp preferred</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Registered Location / Address <span class="req">*</span></label>
+                        <input type="text" id="location" name="location" class="custom-input"
+                               placeholder="Full address or Google Maps link"
+                               value="<%= v('location') %>" required>
+                    </div>
+                </div>
+
+                <div class="kyc-divider"></div>
+
+                <div class="kyc-step-header">
+                    <h3 class="form-section-title">
+                        <i data-lucide="briefcase"></i> Professional details
+                    </h3>
+                    <p class="kyc-step-hint">Helps owners match you to the right tenders.</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="experience">Years of Active Experience <span class="req">*</span></label>
+                        <input type="number" id="experience" name="experience" class="custom-input"
+                               placeholder="e.g. 5" min="0" max="60" value="<%= v('experience') %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="specialization">Specialization <span class="req">*</span></label>
+                        <select class="custom-select" id="specialization" name="specialization" required>
+                            <option value="">Select specialization</option>
+                            <option value="Residential" <%= selected('specialization', 'Residential') %>>Residential Sector Only</option>
+                            <option value="Commercial" <%= selected('specialization', 'Commercial') %>>Commercial Sector Only</option>
+                            <option value="Both" <%= selected('specialization', 'Both') %>>Both Residential & Commercial</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="availability">Current Availability</label>
+                        <select class="custom-select" id="availability" name="availability">
+                            <option value="ready" <%= selected('availability', 'ready') || (!v('availability') ? 'selected' : '') %>>Ready to take new projects</option>
+                            <option value="busy" <%= selected('availability', 'busy') %>>Busy (only accepting inquiries)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pricePerSqft">Base Price Range (₹ / sq.ft)</label>
+                        <input type="number" id="pricePerSqft" name="pricePerSqft" class="custom-input"
+                               min="1" placeholder="e.g. 1800" value="<%= v('pricePerSqft') %>">
+                        <span class="field-hint">Optional · shown on your profile</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== STEP 2: DOCUMENTS ========== -->
+            <section class="kyc-step" data-step="2" hidden>
+                <div class="kyc-step-header">
+                    <h3 class="form-section-title" style="margin-top:0;">
+                        <i data-lucide="folder-up"></i> Upload documents
+                    </h3>
+                    <p class="kyc-step-hint">Clear scans preferred. PDF, JPG, or PNG · max 5MB each.</p>
+                </div>
+
+                <p class="kyc-subsection-label">Photo & signature</p>
+                <div class="form-row kyc-upload-row">
+                    <label class="upload-zone <%= hasDoc('profilePhoto') ? 'has-file' : '' %>">
+                        <i data-lucide="image"></i>
+                        <h4>Profile Photo <span class="req">*</span></h4>
+                        <p class="file-label">JPG / PNG · Max 5MB</p>
+                        <span class="file-chosen"><%= chosenText('profilePhoto') %></span>
+                        <input type="file" name="profilePhoto" accept=".jpg,.jpeg,.png"
+                               <%= hasDoc('profilePhoto') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                    <label class="upload-zone <%= hasDoc('digitalSignature') ? 'has-file' : '' %>">
+                        <i data-lucide="pen-tool"></i>
+                        <h4>Digital Signature <span class="req">*</span></h4>
+                        <p class="file-label">PNG / JPG</p>
+                        <span class="file-chosen"><%= chosenText('digitalSignature') %></span>
+                        <input type="file" name="digitalSignature" accept=".png,.jpg,.jpeg"
+                               <%= hasDoc('digitalSignature') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                </div>
+
+                <p class="kyc-subsection-label">Professional documents</p>
+                <div class="form-row kyc-upload-row">
+                    <label class="upload-zone <%= hasDoc('qualificationDoc') ? 'has-file' : '' %>">
+                        <i data-lucide="graduation-cap"></i>
+                        <h4>Degree / Qualification <span class="req">*</span></h4>
+                        <p class="file-label">Engineering / Architecture · PDF</p>
+                        <span class="file-chosen"><%= chosenText('qualificationDoc') %></span>
+                        <input type="file" name="qualificationDoc" accept=".pdf,.jpg,.jpeg,.png"
+                               <%= hasDoc('qualificationDoc') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                    <label class="upload-zone <%= hasDoc('licenseDoc') ? 'has-file' : '' %>">
+                        <i data-lucide="file-check"></i>
+                        <h4>Govt Construction License <span class="req">*</span></h4>
+                        <p class="file-label">PWD / Municipal · PDF</p>
+                        <span class="file-chosen"><%= chosenText('licenseDoc') %></span>
+                        <input type="file" name="licenseDoc" accept=".pdf,.jpg,.jpeg,.png"
+                               <%= hasDoc('licenseDoc') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                </div>
+
+                <p class="kyc-subsection-label">Legal identity</p>
+                <div class="form-row kyc-upload-row kyc-upload-row-3">
+                    <label class="upload-zone <%= hasDoc('aadhaarDoc') ? 'has-file' : '' %>">
+                        <i data-lucide="credit-card"></i>
+                        <h4>Aadhaar Card <span class="req">*</span></h4>
+                        <p class="file-label">Front & back</p>
+                        <span class="file-chosen"><%= chosenText('aadhaarDoc') %></span>
+                        <input type="file" name="aadhaarDoc" accept=".pdf,.jpg,.jpeg,.png"
+                               <%= hasDoc('aadhaarDoc') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                    <label class="upload-zone <%= hasDoc('panDoc') ? 'has-file' : '' %>">
+                        <i data-lucide="credit-card"></i>
+                        <h4>PAN Card <span class="req">*</span></h4>
+                        <p class="file-label">Business or personal</p>
+                        <span class="file-chosen"><%= chosenText('panDoc') %></span>
+                        <input type="file" name="panDoc" accept=".pdf,.jpg,.jpeg,.png"
+                               <%= hasDoc('panDoc') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                    <label class="upload-zone <%= hasDoc('gstDoc') ? 'has-file' : '' %>">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <h4>GST Certificate</h4>
+                        <p class="file-label">Optional if exempt</p>
+                        <span class="file-chosen"><%= chosenText('gstDoc') %></span>
+                        <input type="file" name="gstDoc" accept=".pdf,.jpg,.jpeg,.png"
+                               onchange="markFileSelected(this)">
+                    </label>
+                </div>
+
+                <p class="kyc-subsection-label">Background certificates <span class="kyc-optional">(Optional)</span></p>
+                <div class="form-row kyc-upload-row kyc-upload-row-3">
+                    <label class="upload-zone <%= hasDoc('incomeCert') ? 'has-file' : '' %>">
+                        <i data-lucide="landmark"></i>
+                        <h4>Income Certificate</h4>
+                        <p class="file-label">PDF / JPG</p>
+                        <span class="file-chosen"><%= chosenText('incomeCert') %></span>
+                        <input type="file" name="incomeCert" accept=".pdf,.jpg,.jpeg,.png"
+                               onchange="markFileSelected(this)">
+                    </label>
+                    <label class="upload-zone <%= hasDoc('nclCert') ? 'has-file' : '' %>">
+                        <i data-lucide="badge-percent"></i>
+                        <h4>Non-Creamy Layer Cert</h4>
+                        <p class="file-label">PDF / JPG</p>
+                        <span class="file-chosen"><%= chosenText('nclCert') %></span>
+                        <input type="file" name="nclCert" accept=".pdf,.jpg,.jpeg,.png"
+                               onchange="markFileSelected(this)">
+                    </label>
+                    <label class="upload-zone <%= hasDoc('policeNoc') ? 'has-file' : '' %>">
+                        <i data-lucide="siren"></i>
+                        <h4>Police NOC / Background</h4>
+                        <p class="file-label">PDF / JPG</p>
+                        <span class="file-chosen"><%= chosenText('policeNoc') %></span>
+                        <input type="file" name="policeNoc" accept=".pdf,.jpg,.jpeg,.png"
+                               onchange="markFileSelected(this)">
+                    </label>
+                </div>
+
+                <p class="kyc-subsection-label">Portfolio <span class="kyc-optional">(Optional)</span></p>
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <label class="upload-zone <%= hasDoc('portfolioImages') ? 'has-file' : '' %>">
+                        <i data-lucide="image-plus"></i>
+                        <h4>Previous Work Photos</h4>
+                        <p class="file-label">Multiple JPG / PNG</p>
+                        <span class="file-chosen"><%= chosenText('portfolioImages', 'Click to upload photos') %></span>
+                        <input type="file" name="portfolioImages" accept=".jpg,.jpeg,.png" multiple
+                               onchange="markFileSelected(this, true)">
+                    </label>
+                </div>
+
+                <p class="kyc-subsection-label">Mandatory agreement</p>
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <label class="upload-zone upload-zone-required <%= hasDoc('stampAgreement') ? 'has-file' : '' %>">
+                        <i data-lucide="file-signature"></i>
+                        <h4>₹500 Stamp Paper Legal Agreement <span class="req">*</span></h4>
+                        <p class="file-label">Signed agreement · PDF only</p>
+                        <span class="file-chosen"><%= chosenText('stampAgreement') %></span>
+                        <input type="file" name="stampAgreement" accept=".pdf"
+                               <%= hasDoc('stampAgreement') ? '' : 'required' %>
+                               onchange="markFileSelected(this)">
+                    </label>
+                </div>
+            </section>
+
+            <!-- ========== STEP 3: PAYMENT ========== -->
+            <section class="kyc-step" data-step="3" hidden>
+                <div class="kyc-step-header">
+                    <h3 class="form-section-title" style="margin-top:0;">
+                        <i data-lucide="wallet"></i> Payment & agreements
+                    </h3>
+                    <p class="kyc-step-hint">Review the plan, accept terms, then pay to submit.</p>
+                </div>
+
+                <div class="kyc-plan-card">
+                    <div class="kyc-plan-head">
+                        <h4>1-Year Contractor Access Plan</h4>
+                        <strong>₹12,775 + 18% GST</strong>
+                    </div>
+                    <p>Payment is split into milestone tranches while KYC is processed.</p>
+                    <ul class="kyc-plan-list">
+                        <li class="<%= isPaid('Advance') ? 'is-paid' : '' %>">
+                            <span>Step 1 · Advance verification deposit<%= isPaid('Advance') ? ' · Paid' : '' %></span>
+                            <strong>₹5,000 + GST</strong>
+                        </li>
+                        <li class="<%= isPaid('Intermediate') ? 'is-paid' : '' %>">
+                            <span>Step 2 · Intermediate active setup<%= isPaid('Intermediate') ? ' · Paid' : '' %></span>
+                            <strong>₹3,000 + GST</strong>
+                        </li>
+                        <li class="<%= isPaid('Final') ? 'is-paid' : '' %>">
+                            <span>Step 3 · Final access settlement<%= isPaid('Final') ? ' · Paid' : '' %></span>
+                            <strong>₹4,775 + GST</strong>
+                        </li>
+                    </ul>
+                    <div class="kyc-plan-now" id="kyc-plan-due">
+                        <% if (allDone) { %>
+                            <span>Payment status</span>
+                            <strong>All 3 payments completed</strong>
+                        <% } else if (v('paymentType') === 'Intermediate') { %>
+                            <span>Due today</span>
+                            <strong>₹3,540 <small>(₹3,000 + 18% GST)</small></strong>
+                        <% } else if (v('paymentType') === 'Final') { %>
+                            <span>Due today</span>
+                            <strong>₹5,635 <small>(₹4,775 + 18% GST)</small></strong>
+                        <% } else { %>
+                            <span>Due today</span>
+                            <strong>₹5,900 <small>(₹5,000 + 18% GST)</small></strong>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <div class="form-group">
+                        <label for="paymentType">Payment Type <span class="req">*</span></label>
+                        <select class="custom-select" id="paymentType" name="paymentType" required <%= allDone ? 'disabled' : '' %>>
+                            <option value="Advance" <%= selected('paymentType', 'Advance') || (!v('paymentType') ? 'selected' : '') %> <%= isPaid('Advance') ? 'disabled' : '' %>>Advance<%= isPaid('Advance') ? ' (Paid)' : '' %></option>
+                            <option value="Intermediate" <%= selected('paymentType', 'Intermediate') %> <%= isPaid('Intermediate') ? 'disabled' : '' %>>Intermediate<%= isPaid('Intermediate') ? ' (Paid)' : '' %></option>
+                            <option value="Final" <%= selected('paymentType', 'Final') %> <%= isPaid('Final') ? 'disabled' : '' %>>Final<%= isPaid('Final') ? ' (Paid)' : '' %></option>
+                        </select>
+                        <% if (allDone) { %>
+                            <input type="hidden" name="paymentType" value="Final">
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="kyc-agreements">
+                    <label class="checkbox-group">
+                        <input type="checkbox" name="acceptPrivacy" value="yes" <%= checked('acceptPrivacy') %> required>
+                        <span>I accept the BuildTender <strong>Privacy Policy</strong> regarding data storage.</span>
+                    </label>
+                    <label class="checkbox-group">
+                        <input type="checkbox" name="acceptTerms" value="yes" <%= checked('acceptTerms') %> required>
+                        <span>I accept the BuildTender <strong>Terms & Conditions</strong> for dispute arbitration.</span>
+                    </label>
+                </div>
+
+                <div class="kyc-review-note">
+                    <i data-lucide="info"></i>
+                    <p>After payment, your profile enters review. Marketplace bidding unlocks once KYC is approved.</p>
+                </div>
+
+                <!-- filled only after Razorpay success — backend refuses save without these -->
+                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+            </section>
+
+            <div id="kyc-step-error" class="alert-banner alert-error kyc-inline-error" hidden role="alert">
+                <i data-lucide="alert-circle"></i>
+                <div>
+                    <strong>Please complete required fields</strong>
+                    <p id="kyc-step-error-text"></p>
+                </div>
+            </div>
+
+            <div class="kyc-nav">
+                <button type="button" id="kyc-back" class="btn-secondary kyc-nav-btn" hidden>
+                    <i data-lucide="arrow-left"></i> Back
+                </button>
+                <div class="kyc-nav-spacer"></div>
+                <button type="button" id="kyc-next" class="btn-primary kyc-nav-btn">
+                    Continue <i data-lucide="arrow-right"></i>
+                </button>
+                <button type="submit" id="kyc-submit" class="btn-primary full-width large kyc-submit-btn" hidden
+                    <%= allDone ? 'disabled' : '' %>>
+                    <i data-lucide="shield"></i>
+                    <% if (allDone) { %>
+                        All 3 payments completed
+                    <% } else if (v('paymentType') === 'Intermediate') { %>
+                        Pay Intermediate (₹3,540) & Submit Profile
+                    <% } else if (v('paymentType') === 'Final') { %>
+                        Pay Final (₹5,635) & Submit Profile
+                    <% } else { %>
+                        Pay Advance (₹5,900) & Submit Profile
+                    <% } %>
+                </button>
+            </div>
+        </form>
+    </main>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/app.js"></script>
+<script>
+(function () {
+    var form = document.getElementById('kyc-form');
+    if (!form) return;
+
+    var current = 1;
+    var total = 3;
+    var submittingAfterPay = false;
+    var titles = {
+        1: 'Step 1 of 3 · Profile',
+        2: 'Step 2 of 3 · Documents',
+        3: 'Step 3 of 3 · Payment'
+    };
+
+    var steps = form.querySelectorAll('.kyc-step');
+    var pills = document.querySelectorAll('.progress-step[data-goto]');
+    var titleEl = document.getElementById('kyc-step-title');
+    var fill = document.getElementById('kyc-progress-fill');
+    var backBtn = document.getElementById('kyc-back');
+    var nextBtn = document.getElementById('kyc-next');
+    var submitBtn = document.getElementById('kyc-submit');
+    var errBox = document.getElementById('kyc-step-error');
+    var errText = document.getElementById('kyc-step-error-text');
+    var paymentTypeEl = document.getElementById('paymentType');
+    var planDueEl = document.getElementById('kyc-plan-due');
+    var completedPayments = <%- JSON.stringify(completed) %>;
+    var allPaymentsDone = <%= allDone ? 'true' : 'false' %>;
+    var feeMeta = {
+        Advance: { label: 'Pay Advance (₹5,900) & Submit Profile', due: '₹5,900 <small>(₹5,000 + 18% GST)</small>' },
+        Intermediate: { label: 'Pay Intermediate (₹3,540) & Submit Profile', due: '₹3,540 <small>(₹3,000 + 18% GST)</small>' },
+        Final: { label: 'Pay Final (₹5,635) & Submit Profile', due: '₹5,635 <small>(₹4,775 + 18% GST)</small>' }
+    };
+
+    function hideError() {
+        if (errBox) errBox.hidden = true;
+    }
+
+    function showError(msg) {
+        if (!errBox) return;
+        errText.textContent = msg;
+        errBox.hidden = false;
+        errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function isTypePaid(type) {
+        return completedPayments.indexOf(type) !== -1;
+    }
+
+    function updatePayButton() {
+        if (!submitBtn) return;
+        if (allPaymentsDone) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="check-circle"></i> All 3 payments completed';
+            if (planDueEl) {
+                planDueEl.innerHTML = '<span>Payment status</span><strong>All 3 payments completed</strong>';
+            }
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+        var type = paymentTypeEl ? paymentTypeEl.value : 'Advance';
+        var meta = feeMeta[type] || feeMeta.Advance;
+        if (planDueEl) {
+            planDueEl.innerHTML = '<span>Due today</span><strong>' + meta.due + '</strong>';
+        }
+        if (isTypePaid(type)) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="check-circle"></i> ' + type + ' already paid';
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i data-lucide="shield"></i> ' + meta.label;
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function resetSubmitBtn() {
+        updatePayButton();
+    }
+
+    function showStep(n) {
+        current = n;
+        steps.forEach(function (step) {
+            var match = Number(step.getAttribute('data-step')) === n;
+            step.classList.toggle('is-active', match);
+            step.hidden = !match;
+        });
+        pills.forEach(function (pill) {
+            var g = Number(pill.getAttribute('data-goto'));
+            pill.classList.toggle('active', g === n);
+            pill.classList.toggle('done', g < n);
+            if (g === n) pill.setAttribute('aria-current', 'step');
+            else pill.removeAttribute('aria-current');
+        });
+        if (titleEl) titleEl.textContent = titles[n];
+        if (fill) fill.style.width = Math.round((n / total) * 100) + '%';
+        backBtn.hidden = n === 1;
+        nextBtn.hidden = n === total;
+        submitBtn.hidden = n !== total;
+        if (n === total) updatePayButton();
+        hideError();
+        if (window.lucide) lucide.createIcons();
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function validateStep(n) {
+        var step = form.querySelector('.kyc-step[data-step="' + n + '"]');
+        if (!step) return true;
+        var fields = step.querySelectorAll('input, select, textarea');
+        for (var i = 0; i < fields.length; i++) {
+            var el = fields[i];
+            if (el.disabled || el.type === 'hidden') continue;
+            if (!el.checkValidity()) {
+                el.reportValidity();
+                el.focus();
+                if (el.type === 'file') {
+                    var zone = el.closest('.upload-zone');
+                    var h4 = zone && zone.querySelector('h4');
+                    showError('Please upload: ' + (h4 ? h4.textContent.replace('*', '').trim() : el.name));
+                } else if (el.type === 'checkbox') {
+                    showError('Please accept the required agreements.');
+                } else {
+                    var label = step.querySelector('label[for="' + el.id + '"]');
+                    var name = label ? label.textContent.replace('*', '').trim() : (el.name || 'This field');
+                    showError('Please fill in: ' + name);
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    nextBtn.addEventListener('click', function () {
+        if (!validateStep(current)) return;
+        if (current < total) showStep(current + 1);
+    });
+
+    backBtn.addEventListener('click', function () {
+        if (current > 1) showStep(current - 1);
+    });
+
+    pills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+            var target = Number(pill.getAttribute('data-goto'));
+            if (target === current) return;
+            if (target < current) {
+                showStep(target);
+                return;
+            }
+            for (var s = current; s < target; s++) {
+                if (!validateStep(s)) return;
+            }
+            showStep(target);
+        });
+    });
+
+    if (paymentTypeEl) {
+        paymentTypeEl.addEventListener('change', updatePayButton);
+    }
+
+    // Pay first → save KYC only after Razorpay success
+    form.addEventListener('submit', async function (e) {
+        if (submittingAfterPay) return;
+
+        e.preventDefault();
+
+        if (allPaymentsDone) {
+            showError('All 3 payments are already completed.');
+            updatePayButton();
+            return;
+        }
+
+        for (var s = 1; s <= total; s++) {
+            if (!validateStep(s)) {
+                showStep(s);
+                return;
+            }
+        }
+
+        var paymentType = paymentTypeEl ? paymentTypeEl.value : 'Advance';
+        if (isTypePaid(paymentType)) {
+            showError(paymentType + ' payment is already completed.');
+            updatePayButton();
+            return;
+        }
+
+        document.getElementById('razorpay_payment_id').value = '';
+        document.getElementById('razorpay_order_id').value = '';
+        document.getElementById('razorpay_signature').value = '';
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Opening payment…';
+        if (window.lucide) lucide.createIcons();
+
+        try {
+            var orderRes = await fetch('/contractor/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentType: paymentType })
+            });
+            var orderData = await orderRes.json();
+
+            if (!orderData.success) {
+                showError(orderData.message || 'Could not start payment. KYC was not saved.');
+                resetSubmitBtn();
+                return;
+            }
+
+            var options = {
+                key: orderData.key,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: 'BuildTender',
+                description: 'Contractor KYC — ' + paymentType + ' payment',
+                order_id: orderData.order_id,
+                prefill: {
+                    name: document.getElementById('fullName').value || '',
+                    email: document.getElementById('email').value || '',
+                    contact: document.getElementById('mobile').value || ''
+                },
+                theme: { color: '#eab308' },
+                handler: function (response) {
+                    // Payment success only → save to database
+                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                    submittingAfterPay = true;
+                    submitBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Saving profile…';
+                    if (window.lucide) lucide.createIcons();
+                    form.submit();
+                },
+                modal: {
+                    ondismiss: function () {
+                        showError('Payment cancelled. KYC data was not saved.');
+                        resetSubmitBtn();
+                    }
+                }
+            };
+
+            var rzp = new Razorpay(options);
+            rzp.on('payment.failed', function () {
+                showError('Payment failed. KYC data was not saved.');
+                resetSubmitBtn();
+            });
+            rzp.open();
+        } catch (err) {
+            console.error(err);
+            showError('Could not start payment. KYC data was not saved.');
+            resetSubmitBtn();
+        }
+    });
+
+    showStep(1);
+})();
+</script>

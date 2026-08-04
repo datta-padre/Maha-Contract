@@ -1,0 +1,155 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+        <nav class="sidebar-nav">
+            <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
+            <a href="/houseowner/post"><i data-lucide="file-plus"></i> Post Tender Details</a>
+            <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
+            <a href="/houseowner/materials" class="active"><i data-lucide="shopping-bag"></i> Material Shop</a>
+            <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
+            <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
+            <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content shop-page">
+        <header class="dashboard-header material-shop-header">
+            <div>
+                <h2>Material Procurement Shop</h2>
+                <p>Purchase cement, steel, and core supplies from verified local vendors near your project site.</p>
+            </div>
+            <div class="material-shop-count">
+                <i data-lucide="package" style="width:18px;height:18px;"></i>
+                <span><strong><%= materials ? materials.length : 0 %></strong> materials listed</span>
+            </div>
+        </header>
+
+        <div class="material-shop-toolbar">
+            <label class="material-search" for="materialSearch">
+                <i data-lucide="search"></i>
+                <input type="search" id="materialSearch" placeholder="Search materials..." autocomplete="off">
+            </label>
+            <select id="materialCategoryFilter" class="material-filter" aria-label="Filter by category">
+                <option value="">All categories</option>
+                <option value="Cement & Concrete">Cement & Concrete</option>
+                <option value="Steel & Metal">Steel & Metal</option>
+                <option value="Bricks & Blocks">Bricks & Blocks</option>
+                <option value="Wood & Timber">Wood & Timber</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="material-grid material-grid-full" id="materialGrid">
+            <% if (!materials || materials.length === 0) { %>
+            <div class="material-card material-empty">
+                <div class="material-card-content">
+                    <i data-lucide="shopping-bag" class="material-empty-icon"></i>
+                    <h3>No Materials Available</h3>
+                    <p style="color: var(--text-muted); margin: 0;">Vendors near you haven't published stock yet.</p>
+                </div>
+            </div>
+            <% } else { %>
+                <% materials.forEach(function(mat) { %>
+                    <%
+                        var categoryImages = {
+                            "Cement & Concrete": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80",
+                            "Steel & Metal": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80",
+                            "Bricks & Blocks": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&q=80",
+                            "Wood & Timber": "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400&q=80",
+                            "Plumbing": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&q=80",
+                            "Electrical": "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&q=80",
+                            "Other": "https://images.unsplash.com/photo-1541888086925-920a0b27521c?w=400&q=80"
+                        };
+                        var stock = Number(mat.matQuantity) || 0;
+                        var stockClass = stock <= 0 ? 'out-stock' : (stock <= 20 ? 'low-stock' : 'in-stock');
+                        var stockLabel = stock <= 0 ? 'Out of stock' : (stock <= 20 ? 'Low stock' : 'In stock');
+                        var imageSrc = mat.matImage
+                            ? '/materials/' + mat.matImage
+                            : (categoryImages[mat.matCategory] || categoryImages["Other"]);
+                        var searchText = ((mat.matName || '') + ' ' + (mat.matCategory || '')).toLowerCase();
+                    %>
+                    <article class="material-card"
+                             data-name="<%= searchText %>"
+                             data-category="<%= mat.matCategory %>">
+                        <div class="material-image-wrap">
+                            <img src="<%= imageSrc %>" alt="<%= mat.matName %>" class="material-image" loading="lazy">
+                            <span class="material-stock-badge <%= stockClass %>"><%= stockLabel %></span>
+                        </div>
+                        <div class="material-card-content">
+                            <div>
+                                <span class="material-category"><%= mat.matCategory %></span>
+                                <h3><%= mat.matName %></h3>
+                                <p class="material-meta">
+                                    <i data-lucide="box"></i>
+                                    <span><%= stock.toLocaleString('en-IN') %> units</span>
+                                </p>
+                            </div>
+                            <div class="material-card-footer">
+                                <div class="material-price">
+                                    ₹<%= Number(mat.matPrice).toLocaleString('en-IN') %>
+                                    <span>/ unit</span>
+                                </div>
+                                <% if (stock > 0) { %>
+                                <button type="button" class="btn-primary btn-buy-now">
+                                    <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i>
+                                    Buy Now
+                                </button>
+                                <% } else { %>
+                                <button class="btn-primary" type="button" disabled>Unavailable</button>
+                                <% } %>
+                            </div>
+                        </div>
+                    </article>
+                <% }) %>
+            <% } %>
+        </div>
+    </main>
+</div>
+
+<div class="cart-toast" id="buyToast" role="status" aria-live="polite"></div>
+
+<script src="/js/app.js"></script>
+<script>
+    lucide.createIcons();
+
+    (function () {
+        var searchInput = document.getElementById('materialSearch');
+        var categoryFilter = document.getElementById('materialCategoryFilter');
+        var grid = document.getElementById('materialGrid');
+        var toastEl = document.getElementById('buyToast');
+        var toastTimer;
+        var cards = Array.prototype.slice.call(document.querySelectorAll('#materialGrid .material-card[data-name]'));
+
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () {
+                toastEl.classList.remove('show');
+            }, 1800);
+        }
+
+        grid.addEventListener('click', function (e) {
+            var buyBtn = e.target.closest('.btn-buy-now');
+            if (!buyBtn) return;
+            showToast('Order request sent to vendor');
+        });
+
+        function filterCards() {
+            var q = (searchInput.value || '').trim().toLowerCase();
+            var cat = categoryFilter.value || '';
+            cards.forEach(function (card) {
+                var nameOk = !q || (card.getAttribute('data-name') || '').indexOf(q) !== -1;
+                var catOk = !cat || card.getAttribute('data-category') === cat;
+                card.style.display = nameOk && catOk ? '' : 'none';
+            });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterCards);
+        if (categoryFilter) categoryFilter.addEventListener('change', filterCards);
+    })();
+</script>

@@ -1,0 +1,130 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo">
+                <i data-lucide="shield" class="logo-icon"></i>
+                <span style="color: var(--text-main);">Super</span>Admin
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin/super-dashboard"><i data-lucide="pie-chart"></i> System Metrics</a>
+                <a href="/admin/super-staff" class="active"><i data-lucide="fingerprint"></i> Staff Management</a>
+                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h2>Admin Staff Configuration</h2>
+                    <p style="color: var(--text-muted); margin-top: 0.25rem;">Hire, Fire, and generate new passwords for
+                        System Admins.</p>
+                </div>
+            </header>
+
+            <div class="staff-form">
+                <h3><i data-lucide="user-plus" style="display:inline; width:18px;"></i> Hire New Administrator</h3>
+                <form id="hireAdminForm" onsubmit="event.preventDefault(); hireAdmin();"
+                    style="display: flex; gap: 1rem; align-items: flex-end; margin-top: 1rem;">
+                    <div style="flex:1;">
+                        <label>Admin Email</label>
+                        <input type="email" id="newAdminEmail" class="form-control" required>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Role</label>
+                        <select id="newAdminRole" class="form-control" style="background:#0f172a;" required>
+                            <option>Verify Admin</option>
+                            <option>Budget Admin</option>
+                            <option>Tender Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="background:#22c55e;">Generate & Hire</button>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Admin Email ID</th>
+                            <th>Current Role</th>
+                            <th>Passcode</th>
+                            <th>Action (Fire / Reset)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        function loadStaff() {
+            let staff = JSON.parse(localStorage.getItem('adminStaffDatabase')) || [];
+            if (staff.length === 0) {
+                staff.push({ email: 'super@buildtender.com', pass: 'root123', role: 'Super Admin' });
+                localStorage.setItem('adminStaffDatabase', JSON.stringify(staff));
+            }
+
+            const tbody = document.getElementById('staffTableBody');
+            tbody.innerHTML = '';
+
+            staff.forEach((admin, i) => {
+                const tr = document.createElement('tr');
+
+                tr.innerHTML = `
+                  <td><strong>${admin.email}</strong></td>
+                  <td><span class="badge-paid">${admin.role}</span></td>
+                  <td><span style="font-family:monospace; background:rgba(0,0,0,0.5); padding:0.2rem 0.5rem; border-radius:4px;">${admin.pass}</span></td>
+                  <td style="display:flex; gap:0.5rem;">
+                      ${admin.role !== 'Super Admin' ? `<button onclick="resetPass(${i})" class="btn-small btn-secondary">Change Pass</button>` : ''}
+                      ${admin.role !== 'Super Admin' ? `<button onclick="fireAdmin(${i})" class="btn-small btn-reject">Fire Account</button>` : '<span style="color:#ef4444; font-size:0.8rem;">Cannot Fire Root</span>'}
+                  </td>
+              `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function hireAdmin() {
+            const email = document.getElementById('newAdminEmail').value;
+            const role = document.getElementById('newAdminRole').value;
+            const pass = Math.random().toString(36).slice(-8); // Generate 8-char temp pass
+
+            let staff = JSON.parse(localStorage.getItem('adminStaffDatabase'));
+            if (staff.find(s => s.email === email)) return alert("Email already exists!");
+
+            staff.push({ email, pass, role });
+            localStorage.setItem('adminStaffDatabase', JSON.stringify(staff));
+            document.getElementById('hireAdminForm').reset();
+            loadStaff();
+        }
+
+        function resetPass(index) {
+            let staff = JSON.parse(localStorage.getItem('adminStaffDatabase'));
+            const newPass = prompt("Enter new passcode for " + staff[index].email + ":", Math.random().toString(36).slice(-8));
+            if (newPass) {
+                staff[index].pass = newPass;
+                localStorage.setItem('adminStaffDatabase', JSON.stringify(staff));
+                loadStaff();
+            }
+        }
+
+        function fireAdmin(index) {
+            if (confirm("Are you sure you want to completely fire and revoke access for this admin?")) {
+                let staff = JSON.parse(localStorage.getItem('adminStaffDatabase'));
+                staff.splice(index, 1);
+                localStorage.setItem('adminStaffDatabase', JSON.stringify(staff));
+                loadStaff();
+            }
+        }
+
+        // Auto load on init
+        loadStaff();
+    </script>
+<%- include('../partials/footer') %>

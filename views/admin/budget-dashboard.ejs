@@ -1,0 +1,206 @@
+<%- include('../partials/header') %>
+<div class="background-animation"></div>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="logo sidebar-logo"><i data-lucide="shield-check" class="logo-icon"></i><span style="color:#ef4444;">Admin</span>Desk</div>
+            <nav class="sidebar-nav">
+                <a href="#" onclick="switchTab('overview', event)"><i data-lucide="layout-dashboard"></i> Overview</a>
+                <a href="#" onclick="switchTab('pending', event)"><i data-lucide="clock"></i> Pending Budget</a>
+                <a href="#" onclick="switchTab('completed', event)"><i data-lucide="check-circle"></i> Completed Budget</a>
+                <a href="#" onclick="switchTab('payment', event)"><i data-lucide="wallet"></i> Payment</a>
+                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
+            </nav>
+        </aside>
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h2>Budget Estimator Desk</h2>
+                    <p style="color:var(--text-muted); font-size:0.9rem;" id="headerSubtitle">Estimate base costs, assign dates, and compile PDF reports for Tender Admin.</p>
+                </div>
+                <div class="user-profile"><span class="status-badge" style="background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56,189,248,0.2);">System Authority</span></div>
+            </header>
+            
+            <!-- OVERVIEW TAB -->
+            <div id="tab-overview" class="tab-content" style="display: block;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div style="background: rgba(15,23,42,0.6); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--surface-border);">
+                        <h4 style="color:var(--text-muted); font-weight:normal;">Total Pending</h4>
+                        <h2 style="font-size: 2rem; color: #38bdf8; margin: 0.5rem 0;" id="statPending">0</h2>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.6); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--surface-border);">
+                        <h4 style="color:var(--text-muted); font-weight:normal;">Total Completed</h4>
+                        <h2 style="font-size: 2rem; color: #22c55e; margin: 0.5rem 0;" id="statCompleted">0</h2>
+                    </div>
+                </div>
+                <p style="color:var(--text-muted);">Please navigate to 'Pending Budget' from the sidebar to process new incoming House Owner tenders.</p>
+            </div>
+
+            <!-- PENDING BUDGET TAB -->
+            <div id="tab-pending" class="tab-content" style="display: none;">
+                <h3 style="margin-bottom: 1rem; color: #38bdf8; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">Pending Estimations</h3>
+                <div id="pendingBudgetsList"></div>
+            </div>
+
+            <!-- COMPLETED BUDGET TAB -->
+            <div id="tab-completed" class="tab-content" style="display: none;">
+                <h3 style="margin-bottom: 1rem; color: #22c55e; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">Completed Estimations (Editable)</h3>
+                <div id="completedBudgetsList"></div>
+            </div>
+
+            <!-- PAYMENT TAB -->
+            <div id="tab-payment" class="tab-content" style="display: none;">
+                <h3 style="margin-bottom: 1rem; color: #eab308; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">House Owner Payments Overview</h3>
+                <div style="background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; background: rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden;">
+                        <tr style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                            <th style="padding: 1rem;">Owner Name</th>
+                            <th>Tender ID</th>
+                            <th>Platform Fee</th>
+                            <th>Payment Status</th>
+                        </tr>
+                        <tbody id="paymentTendersList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script src="/js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        function switchTab(tabId, eventArg) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.getElementById('tab-' + tabId).style.display = 'block';
+            
+            // Update active state in sidebar
+            const links = document.querySelectorAll('.sidebar-nav a');
+            links.forEach(link => link.classList.remove('active'));
+            if (eventArg && eventArg.currentTarget) {
+                eventArg.currentTarget.classList.add('active');
+            }
+            
+            const subtitle = document.getElementById('headerSubtitle');
+            if(tabId === 'overview') subtitle.innerText = "High level statistics for budget pipeline.";
+            if(tabId === 'pending') subtitle.innerText = "Estimate base costs, assign dates, and compile PDF reports for Tender Admin.";
+            if(tabId === 'completed') subtitle.innerText = "Review and edit finalized budget specifications.";
+            if(tabId === 'payment') subtitle.innerText = "Review all mapped ₹5,999 Blueprint Payments generated by House Owners.";
+        }
+
+        function renderBudgets() {
+            const tenders = JSON.parse(localStorage.getItem('working_tenders')) || [];
+            const pendingList = document.getElementById('pendingBudgetsList');
+            const completedList = document.getElementById('completedBudgetsList');
+            const paymentList = document.getElementById('paymentTendersList');
+            
+            pendingList.innerHTML = '';
+            completedList.innerHTML = '';
+            paymentList.innerHTML = '';
+
+            const pending = tenders.filter(t => t.status === 'pending_budget');
+            const completed = tenders.filter(t => t.status !== 'pending_budget');
+
+            document.getElementById('statPending').innerText = pending.length;
+            document.getElementById('statCompleted').innerText = completed.length;
+
+            if(pending.length === 0) pendingList.innerHTML = '<p style="color:var(--text-muted); padding:1rem; border:1px dashed var(--surface-border); border-radius:8px; text-align:center;">No pending tenders waiting for budget estimation.</p>';
+            if(completed.length === 0) completedList.innerHTML = '<p style="color:var(--text-muted); padding:1rem; border:1px dashed var(--surface-border); border-radius:8px; text-align:center;">No completed estimations.</p>';
+            
+            if(tenders.length === 0) paymentList.innerHTML = '<tr><td colspan="4" style="padding:1rem; text-align:center; color:var(--text-muted);">No tenders logged in system yet.</td></tr>';
+
+            // Payment List Rendering
+            tenders.forEach(t => {
+                paymentList.innerHTML += `
+                    <tr style="border-bottom: 1px solid var(--surface-border);">
+                        <td style="padding: 1rem;">${t.owner}</td>
+                        <td>${t.id}</td>
+                        <td>₹5,999 (+GST)</td>
+                        <td><span style="color:#22c55e; font-weight:bold;">✅ Received</span></td>
+                    </tr>
+                `;
+            });
+
+            pending.forEach(t => {
+                pendingList.innerHTML += `
+                    <div style="background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; margin-bottom:1rem;">
+                        <h4 style="margin-bottom: 0.5rem; display:flex; justify-content:space-between;">${t.id}: ${t.title} <span style="font-size:0.8rem; background:rgba(234, 179, 8, 0.1); color:#eab308; padding:0.2rem 0.6rem; border-radius:4px;">Action Required</span></h4>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 1.5rem;">Area: ${t.area} | House Owner: ${t.owner}</p>
+                        
+                        <form onsubmit="handleBudgetSubmit(event, '${t.id}')">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">System Estimated Cost (₹)</label>
+                                    <input type="number" id="cost-${t.id}" required placeholder="e.g. 2400000" style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--surface-border); background:rgba(0,0,0,0.2); color:#fff;">
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Completion Target Date</label>
+                                    <input type="date" id="date-${t.id}" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--surface-border); background:rgba(0,0,0,0.2); color:#fff; font-family:inherit;">
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Compulsory Budget Report (PDF)</label>
+                                <div style="border: 1px dashed var(--surface-border); border-radius: 8px; padding: 1.5rem; text-align: center; cursor: pointer; background:rgba(255,255,255,0.02);" onclick="this.querySelector('input').click()">
+                                    <input type="file" accept=".pdf" required style="display:none;" onchange="this.nextElementSibling.innerText = 'File Selected: ' + this.files[0].name">
+                                    <p style="color:var(--text-muted);"><i data-lucide="upload-cloud" style="width:20px; vertical-align:middle;"></i> Click to Upload PDF Report</p>
+                                </div>
+                            </div>
+                            
+                            <button class="btn-primary full-width" type="submit" style="background:var(--accent); border-radius:8px; padding:0.8rem;">Submit & Forward to Tender Admin</button>
+                        </form>
+                    </div>
+                `;
+            });
+
+            completed.forEach(t => {
+                completedList.innerHTML += `
+                    <div style="background: rgba(15,23,42,0.4); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.5rem; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <div>
+                            <h4 style="margin-bottom: 0.25rem;">${t.id}: ${t.title} <i data-lucide="check-circle" style="width:16px; color:#22c55e; vertical-align:middle;"></i></h4>
+                            <p style="color:var(--text-muted); font-size:0.85rem;">Estimated Cost: ₹${t.budget} | Target: ${t.completion} | Status: ${t.status}</p>
+                        </div>
+                        <button onclick="editBudget('${t.id}')" style="background:transparent; border:1px solid var(--surface-border); color:#fff; padding:0.5rem 1rem; border-radius:6px; cursor:pointer;"><i data-lucide="edit-3" style="width:16px; vertical-align:middle;"></i> Edit</button>
+                    </div>
+                `;
+            });
+
+            lucide.createIcons();
+        }
+
+        function handleBudgetSubmit(event, id) {
+            event.preventDefault();
+            const cost = document.getElementById('cost-' + id).value;
+            const date = document.getElementById('date-' + id).value;
+
+            let tenders = JSON.parse(localStorage.getItem('working_tenders')) || [];
+            let tenderInfo = tenders.find(t => t.id === id);
+            if(tenderInfo) {
+                tenderInfo.budget = cost;
+                tenderInfo.completion = date;
+                tenderInfo.status = 'pending_tender_admin';
+                localStorage.setItem('working_tenders', JSON.stringify(tenders));
+                alert('Budget Report Compiled & Successfully Forwarded to Tender Admin!');
+                renderBudgets();
+                switchTab('completed');
+            }
+        }
+
+        function editBudget(id) {
+            let tenders = JSON.parse(localStorage.getItem('working_tenders')) || [];
+            let tenderInfo = tenders.find(t => t.id === id);
+            if(tenderInfo) {
+                tenderInfo.status = 'pending_budget';
+                localStorage.setItem('working_tenders', JSON.stringify(tenders));
+                renderBudgets();
+                switchTab('pending');
+            }
+        }
+
+        renderBudgets();
+    </script>
+
+        </main>
+    </div>
+    <script src="/js/app.js"></script>
+    <script>lucide.createIcons();</script>
+<%- include('../partials/footer') %>
