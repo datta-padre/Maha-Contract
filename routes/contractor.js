@@ -4,34 +4,12 @@ const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const router = express.Router();
 const exe = require('../config/connection');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-router.use(cookieParser());
+const { ROLES, verifyToken, requireRole } = require('../middleware/auth');
+
+const contractorOnly = [verifyToken, requireRole(ROLES.CONTRACTOR)];
 
 if (!fs.existsSync('public/kyc')) {
     fs.mkdirSync('public/kyc', { recursive: true });
-}
-
-async function verifyToken(req, res, next) {
-    const token = req.cookies.accessToken;
-    if (!token) {
-        res.clearCookie('accessToken');
-        return res.redirect('/');
-    }
-
-    const blacklisted = await exe(`SELECT * FROM token_blacklist WHERE token = ?`, [token]);
-    if (Array.isArray(blacklisted) && blacklisted.length > 0) {
-        return res.redirect('/');
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user_id = decoded.user_id;
-        next();
-    } catch (err) {
-        res.clearCookie('accessToken');
-        return res.redirect('/');
-    }
 }
 
 const KYC_FEES = {
@@ -143,7 +121,7 @@ function renderDashboard(res, opts) {
     });
 }
 
-router.get('/dashboard', verifyToken, async (req, res) => {
+router.get('/dashboard', contractorOnly, async (req, res) => {
     try {
         var userRows = await exe(`SELECT email, mobile FROM users WHERE user_id = ?`, [req.user_id]);
         var user = Array.isArray(userRows) && userRows[0] ? userRows[0] : null;
@@ -178,7 +156,7 @@ router.get('/dashboard', verifyToken, async (req, res) => {
 });
 
 // Step 1: create Razorpay order — NO database save
-router.post('/create-order', verifyToken, async (req, res) => {
+router.post('/create-order', contractorOnly, async (req, res) => {
     try {
         var paymentType = (req.body && req.body.paymentType) || 'Advance';
         if (!KYC_FEES[paymentType]) {
@@ -224,7 +202,7 @@ router.post('/create-order', verifyToken, async (req, res) => {
 });
 
 // Step 2: verify payment → ONLY THEN save KYC to database
-router.post('/kyc', verifyToken, async (req, res) => {
+router.post('/kyc', contractorOnly, async (req, res) => {
     var d = req.body || {};
     var files = req.files || {};
 
@@ -410,16 +388,16 @@ router.post('/kyc', verifyToken, async (req, res) => {
     }
 });
 
-router.get('/marketplace', verifyToken, (req, res) => {
+router.get('/marketplace', contractorOnly, (req, res) => {
     res.render('contractor/marketplace');
 });
-router.get('/materials', verifyToken, (req, res) => {
+router.get('/materials', contractorOnly, (req, res) => {
     res.render('contractor/materials');
 });
-router.get('/bids', verifyToken, (req, res) => {
+router.get('/bids', contractorOnly, (req, res) => {
     res.render('contractor/bids');
 });
-router.get('/profile', verifyToken, (req, res) => {
+router.get('/profile', contractorOnly, (req, res) => {
     res.render('contractor/profile');
 });
 

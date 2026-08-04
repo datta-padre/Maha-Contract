@@ -4,34 +4,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const exe = require('../config/connection');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-router.use(cookieParser()); 
+const { ROLES, verifyToken, requireRole } = require('../middleware/auth');
 
-async function verifyToken(req, res, next) {
-
-    const query = `SELECT * FROM token_blacklist WHERE token = ?`;
-    const result = await exe(query, [req.cookies.accessToken]);
-    if (result.length > 0) {
-        return res.redirect('/');
-    }
-
-    const token = req.cookies.accessToken;
-    if (!token) {
-        res.clearCookie('accessToken');
-        return res.redirect('/');
-    }
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user_id = decoded.user_id;
-        next();
-    } catch (err) {
-        // Invalid or expired (TokenExpiredError) token
-        res.clearCookie('accessToken');
-        return res.redirect('/');
-    }
-}
-
+const houseownerOnly = [verifyToken, requireRole(ROLES.HOUSEOWNER)];
 
 // Make sure upload folder exists
 if (!fs.existsSync('public/tenders')) {
@@ -46,12 +21,12 @@ const razorpay = new Razorpay({
 });
 
 
-router.get('/overview',verifyToken, async (req, res) => {
+router.get('/overview',houseownerOnly, async (req, res) => {
     var result = await exe(`SELECT COUNT(tender_id) as total_tenders FROM tenders`);
         res.render('houseowner/overview', { total_tenders: result[0].total_tenders });
     });
 
-router.get('/post', verifyToken, (req, res) => {
+router.get('/post', houseownerOnly, (req, res) => {
     res.render('houseowner/post', {
         success: false,
         formData: {},
@@ -59,7 +34,7 @@ router.get('/post', verifyToken, (req, res) => {
     });
 });
 
-router.get('/tenders', verifyToken, async(req, res) => {
+router.get('/tenders', houseownerOnly, async(req, res) => {
 
     var sql = `SELECT * FROM tenders  `
     var value = [req.user_id]
@@ -70,18 +45,18 @@ router.get('/tenders', verifyToken, async(req, res) => {
     res.render('houseowner/tenders', { tenders: data });
 });
 
-router.get('/materials', verifyToken, async (req, res) => {
+router.get('/materials', houseownerOnly, async (req, res) => {
     var sql = `SELECT * FROM materials`;
     var data = await exe(sql);
     if (!Array.isArray(data)) data = [];
     res.render('houseowner/materials', { materials: data });
 });
 
-router.get('/payments', verifyToken, (req, res) => {
+router.get('/payments', houseownerOnly, (req, res) => {
     res.render('houseowner/payments');
 });
 
-router.get('/profile', verifyToken, async (req, res) => {
+router.get('/profile', houseownerOnly, async (req, res) => {
     var result = await exe(`SELECT * FROM users WHERE user_id = ?`, [req.user_id]);
     if (!result.length) {
         return res.redirect('/');
@@ -91,7 +66,7 @@ router.get('/profile', verifyToken, async (req, res) => {
 
 // ---------- step 1: create Razorpay order (no DB save) ----------
 
-router.post('/create-order', verifyToken, async (req, res) => {
+router.post('/create-order', houseownerOnly, async (req, res) => {
     try {
         var order = await razorpay.orders.create({
             amount: TENDER_FEE * 100, // paise
@@ -114,7 +89,7 @@ router.post('/create-order', verifyToken, async (req, res) => {
 
 // ---------- step 2: verify payment → then save tender ----------
 
-router.post('/save-tender', verifyToken, async (req, res) => {
+router.post('/save-tender', houseownerOnly, async (req, res) => {
     var d = req.body;
 
     var orderId = d.razorpay_order_id || '';

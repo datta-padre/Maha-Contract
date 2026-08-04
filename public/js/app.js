@@ -131,7 +131,7 @@ function goToDashboard(mode) {
             console.log('Server Response:', data);
             if (data.success) {
                 alert('Registration successful! Redirecting to dashboard...');
-                window.location.href = `/${currentRole}/overview`; 
+                window.location.href = data.redirect || `/${currentRole}/overview`;
             } else {
                 alert(data.message || 'User already exists or registration failed. Please try again.');
             }
@@ -161,9 +161,9 @@ function goToDashboard(mode) {
             console.log('Server Response:', data);
             if (data.success) {
                 alert('Login successful! Redirecting to dashboard...');
-                window.location.href = `/${role}/dashboard`;
+                window.location.href = data.redirect || `/${role}/dashboard`;
             } else {
-                alert('Login failed. Please check your credentials.');
+                alert(data.message || 'Login failed. Please check your credentials.');
             }
         })
         .catch(error => {
@@ -178,29 +178,24 @@ function goToDashboard(mode) {
 function submitAdmin() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
-    
-    let staff = JSON.parse(localStorage.getItem('adminStaffDatabase')) || [];
-    if(staff.length === 0) {
-        staff.push({ email: 'super@buildtender.com', pass: 'root123', role: 'Super Admin' });
-        localStorage.setItem('adminStaffDatabase', JSON.stringify(staff));
-    }
 
-    const auth = staff.find(s => s.email === email && s.pass === pass);
-    if(auth) {
-        localStorage.setItem('adminAuth', 'true');
-        localStorage.setItem('currentAdmin', JSON.stringify(auth));
-        
-        switch(auth.role) {
-            case 'Super Admin': window.location.href = 'super-admin-dashboard.html'; break;
-            case 'Verify Admin': window.location.href = 'verify-admin-dashboard.html'; break;
-            case 'Quote Admin': window.location.href = 'quotation-admin-dashboard.html'; break;
-            case 'Budget Admin': window.location.href = 'budget-admin-dashboard.html'; break;
-            case 'Quality Admin': window.location.href = 'quality-team-dashboard.html'; break;
-            default: window.location.href = 'admin-directory.html';
+    fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pass })
+    })
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+        if (data.success) {
+            window.location.href = data.redirect || '/admin/verify-dashboard';
+        } else {
+            alert(data.message || 'Intrusion Blocked: Invalid Admin Credentials.');
         }
-    } else {
-        alert("Intrusion Blocked: Invalid Admin Credentials.");
-    }
+    })
+    .catch(function (err) {
+        console.error(err);
+        alert('Admin login failed. Please try again.');
+    });
 }
 
 function initThemeToggle() {

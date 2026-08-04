@@ -4,7 +4,7 @@ CREATE TABLE users (
     mobile VARCHAR(15) NOT NULL ,
     email VARCHAR(100) NOT NULL,
     password_hash TEXT NOT NULL,
-    role ENUM("vendor","contractor","houseowner") NOT NULL,
+    role ENUM('admin','user','vendor','contractor','houseowner') NOT NULL,
     address TEXT,
     taluka VARCHAR(100),
     district VARCHAR(100),
@@ -93,3 +93,7 @@ CREATE TABLE contractor_kyc(
     razorpay_order_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Seed admin via: node scripts/seed-admin-rbac.js
+-- Default: admin@buildtender.com / admin123 (role=admin)
+
