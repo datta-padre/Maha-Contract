@@ -1,0 +1,21 @@
+<%
+    var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
+%>
+<aside class="sidebar">
+    <div class="logo sidebar-logo">
+        <i data-lucide="shield-check" class="logo-icon"></i>
+        <span style="color:#ef4444;">Admin</span>Desk
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/verify-admin" class="<%= page === 'overview' ? 'active' : '' %>">
+            <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+        <a href="/verify-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
+            <i data-lucide="clock"></i> Pending Queue
+        </a>
+        <a href="/verify-admin/verified" class="<%= page === 'verified' ? 'active' : '' %>">
+            <i data-lucide="database"></i> Verified Database
+        </a>
+        <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+    </nav>
+</aside>

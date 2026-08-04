@@ -1,0 +1,155 @@
+<%
+    var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
+    var kycOpen = (page === 'kyc' || page === 'pending' || page === 'verified' || page === 'rejected');
+%>
+<style>
+    .ma-kyc-group { margin: 0.15rem 0 0.35rem; }
+    .ma-kyc-parent {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        text-align: left;
+    }
+    .ma-kyc-parent:hover,
+    .ma-kyc-parent.is-open {
+        background: rgba(255, 255, 255, 0.04);
+    }
+    .ma-kyc-parent > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+    .ma-kyc-parent i { width: 18px; height: 18px; }
+    .ma-kyc-chevron {
+        width: 16px !important;
+        height: 16px !important;
+        opacity: 0.7;
+        transition: transform 0.2s ease;
+    }
+    .ma-kyc-parent.is-open .ma-kyc-chevron { transform: rotate(180deg); }
+    .ma-kyc-sub {
+        display: none;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.15rem 0 0.35rem 0.85rem;
+        margin: 0 0 0.25rem;
+        border-left: 1px solid rgba(234, 179, 8, 0.25);
+        margin-left: 1.15rem;
+    }
+    .ma-kyc-sub.is-open { display: flex; }
+    .ma-kyc-sub a {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 8px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    .ma-kyc-sub a:hover,
+    .ma-kyc-sub a.active {
+        color: #fff;
+        background: rgba(234, 179, 8, 0.12);
+    }
+    .ma-kyc-sub a i { width: 15px; height: 15px; }
+</style>
+
+<aside class="sidebar">
+    <div class="logo sidebar-logo">
+        <i data-lucide="crown" class="logo-icon"></i>
+        <span style="color:#eab308;">Master</span>Admin
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/master-admin" class="<%= page === 'overview' ? 'active' : '' %>">
+            <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+                <span>
+                    <i data-lucide="shield-check"></i>
+                    KYC Verification
+                </span>
+                <i data-lucide="chevron-down" class="ma-kyc-chevron"></i>
+            </button>
+            <div class="ma-kyc-sub <%= kycOpen ? 'is-open' : '' %>" id="maKycSub">
+                <a href="/verify-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
+                    <i data-lucide="clock"></i> Pending
+                </a>
+                <a href="/verify-admin/verified" class="<%= page === 'verified' ? 'active' : '' %>">
+                    <i data-lucide="check-circle"></i> Verified
+                </a>
+                <a href="/verify-admin/rejected" class="<%= page === 'rejected' ? 'active' : '' %>">
+                    <i data-lucide="x-circle"></i> Reject
+                </a>
+            </div>
+        </div>
+
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+                <span>
+                    <i data-lucide="shield-check"></i>
+                    User Management
+                </span>
+            </button>
+        </div>
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+                <span>
+                    <i data-lucide="shield-check"></i>
+                    Staff Management
+                </span>
+            </button>
+        </div>
+
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+                <span>
+                    <i data-lucide="calculator"></i>
+                    Budget management
+                </span>
+            </button>
+        </div>
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+                <span>
+                    <i data-lucide="package"></i>
+                    Materials management
+                </span>
+            </button>
+        </div>
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+                <span>
+                    <i data-lucide="file-text"></i>
+                    Tender management
+                </span>
+            </button>
+        </div>
+        <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+    </nav>
+</aside>
+
+<script>
+(function () {
+    var btn = document.getElementById('maKycToggle');
+    var sub = document.getElementById('maKycSub');
+    if (!btn || !sub) return;
+    btn.addEventListener('click', function () {
+        var open = sub.classList.toggle('is-open');
+        btn.classList.toggle('is-open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (window.lucide) lucide.createIcons();
+    });
+})();
+</script>

@@ -179,7 +179,7 @@ function submitAdmin() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
 
-    fetch('/admin/login', {
+    fetch('/master-admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: pass })
@@ -187,7 +187,7 @@ function submitAdmin() {
     .then(function (response) { return response.json(); })
     .then(function (data) {
         if (data.success) {
-            window.location.href = data.redirect || '/admin/verify-dashboard';
+            window.location.href = data.redirect || '/master-admin';
         } else {
             alert(data.message || 'Intrusion Blocked: Invalid Admin Credentials.');
         }

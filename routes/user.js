@@ -82,7 +82,7 @@ router.post("/login", async (req, res) => {
     if (normalizedRole === ROLES.ADMIN) {
       return res.json({
         success: false,
-        message: "Please use the Admin login page."
+        message: "Please use the Master Admin login page."
       });
     }
 

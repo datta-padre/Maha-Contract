@@ -44,7 +44,7 @@ function clearAuth(res) {
 
 function dashboardForRole(role) {
     var r = String(role || '').toLowerCase();
-    if (r === ROLES.ADMIN) return '/admin/verify-dashboard';
+    if (r === ROLES.ADMIN) return '/master-admin';
     if (r === ROLES.CONTRACTOR) return '/contractor/dashboard';
     if (r === ROLES.VENDOR) return '/vendor/dashboard';
     if (r === ROLES.HOUSEOWNER) return '/houseowner/overview';
@@ -69,7 +69,9 @@ function wantsJson(req) {
     // fetch() create-order / approve-kyc style APIs
     if (req.path && (
         req.path.indexOf('create-order') !== -1 ||
-        req.path.indexOf('approve-kyc') !== -1
+        req.path.indexOf('approve-kyc') !== -1 ||
+        req.path.indexOf('/approve/') !== -1 ||
+        req.path.indexOf('/reject/') !== -1
     )) return true;
     return false;
 }
@@ -81,8 +83,13 @@ function unauthorized(req, res, message) {
             message: message || 'Authentication required.'
         });
     }
-    if (req.originalUrl && req.originalUrl.indexOf('/admin') === 0) {
-        return res.redirect('/admin/login');
+    if (req.originalUrl && (
+        req.originalUrl.indexOf('/admin') === 0 ||
+        req.originalUrl.indexOf('/kyc-verified') === 0 ||
+        req.originalUrl.indexOf('/master-admin') === 0 ||
+        req.originalUrl.indexOf('/verify-admin') === 0
+    )) {
+        return res.redirect('/master-admin/login');
     }
     return res.redirect('/');
 }
@@ -97,8 +104,13 @@ function forbidden(req, res, message) {
     if (req.role) {
         return res.redirect(dashboardForRole(req.role));
     }
-    if (req.originalUrl && req.originalUrl.indexOf('/admin') === 0) {
-        return res.redirect('/admin/login');
+    if (req.originalUrl && (
+        req.originalUrl.indexOf('/admin') === 0 ||
+        req.originalUrl.indexOf('/kyc-verified') === 0 ||
+        req.originalUrl.indexOf('/master-admin') === 0 ||
+        req.originalUrl.indexOf('/verify-admin') === 0
+    )) {
+        return res.redirect('/master-admin/login');
     }
     return res.redirect('/');
 }

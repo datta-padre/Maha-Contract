@@ -391,8 +391,11 @@ router.post('/kyc', contractorOnly, async (req, res) => {
 router.get('/marketplace', contractorOnly, (req, res) => {
     res.render('contractor/marketplace');
 });
-router.get('/materials', contractorOnly, (req, res) => {
-    res.render('contractor/materials');
+router.get('/materials', contractorOnly, async (req, res) => {
+    var sql = `SELECT * FROM materials`;
+    var data = await exe(sql);
+    if (!Array.isArray(data)) data = [];
+    res.render('contractor/materials', { materials: data });
 });
 router.get('/bids', contractorOnly, (req, res) => {
     res.render('contractor/bids');

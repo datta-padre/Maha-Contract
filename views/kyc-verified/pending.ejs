@@ -1,0 +1,197 @@
+<%- include('../partials/header') %>
+<%
+    var pending = (typeof pendingUsers !== 'undefined' && Array.isArray(pendingUsers)) ? pendingUsers : [];
+
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (!amount && amount !== 0) return '—';
+        return '₹' + Number(amount).toLocaleString('en-IN');
+    }
+    function payBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
+        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
+        return { color: '#eab308', label: 'Pending' };
+    }
+    function docUrl(file) {
+        if (!file || !String(file).trim()) return '';
+        return '/verify-admin/view-doc?file=' + encodeURIComponent(String(file).trim());
+    }
+    function kycDocs(u) {
+        return [
+            { label: 'Photo', file: u.profile_picture },
+            { label: 'Signature', file: u.digital_signature },
+            { label: 'Qualification', file: u.qualifications },
+            { label: 'License', file: u.licenses },
+            { label: 'Aadhaar', file: u.adhar_card },
+            { label: 'PAN', file: u.pan_card },
+            { label: 'GST', file: u.gst_certificate },
+            { label: 'Income cert', file: u.insurance_certificate },
+            { label: 'NCL', file: u.non_crime_certificate },
+            { label: 'Police NOC', file: u.police_ncertificate },
+            { label: 'Portfolio', file: u.previous_work },
+            { label: 'Stamp', file: u.legal_agreement }
+        ].filter(function (d) { return d.file && String(d.file).trim(); });
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Pending KYC Queue</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Open documents, then approve or reject each contractor.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Pending</span>
+                <strong><%= pending.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div style="margin-bottom: 1.5rem; position: relative;">
+            <i data-lucide="search" style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, email, phone or KYC ID..."
+                   style="width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: 12px; background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); color: white; font-size: 1rem;">
+        </div>
+
+        <% if (pending.length === 0) { %>
+        <div class="empty-state">
+            <i data-lucide="check-circle" style="width: 48px; height: 48px; margin-bottom: 1rem; color: #22c55e;"></i>
+            <h3>Queue is Empty</h3>
+            <p>No contractors are awaiting document validation.</p>
+        </div>
+        <% } else { %>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+            <% pending.forEach(function (u) {
+                var pay = payBadge(u.payment_status);
+                var docs = kycDocs(u);
+                var searchKey = [u.kyc_id, u.full_name, u.email, u.phone].join(' ').toLowerCase();
+            %>
+            <div class="kyc-card" data-search="<%= searchKey %>"
+                 style="background: rgba(15,23,42,0.6); border-radius: 12px; border: 1px solid var(--surface-border); overflow: hidden;">
+                <div onclick="toggleDetails(<%= u.kyc_id %>)"
+                     style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.02)">
+                    <div>
+                        <h3 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <%= safe(u.full_name) %>
+                            <span style="font-size: 0.8rem; background: rgba(234, 179, 8, 0.1); color: #eab308; padding: 0.2rem 0.5rem; border-radius: 4px;">KYC #<%= u.kyc_id %></span>
+                            <span style="font-size: 0.8rem; color: <%= pay.color %>;"><%= pay.label %></span>
+                        </h3>
+                        <p style="color: var(--text-muted); margin: 0;">
+                            <%= safe(u.phone) %> · <%= safe(u.email) %> · <%= safe(u.specialization) %>
+                        </p>
+                    </div>
+                    <div><i data-lucide="chevron-down" id="icon-<%= u.kyc_id %>"></i></div>
+                </div>
+
+                <div id="details-<%= u.kyc_id %>" style="display: none; padding: 1.5rem; border-top: 1px solid var(--surface-border);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Experience</p>
+                            <strong><%= safe(u.experience) %> yrs</strong>
+                        </div>
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Availability</p>
+                            <strong><%= safe(u.availability) %></strong>
+                        </div>
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Base price</p>
+                            <strong><%= u.base_price_range ? ('₹' + u.base_price_range + '/sq.ft') : '—' %></strong>
+                        </div>
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Payment</p>
+                            <strong><%= safe(u.contractor_payment_status) %> · <%= money(u.payment_amount) %></strong>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-bottom: 0.75rem;">Documents (<%= docs.length %>)</h4>
+                    <% if (docs.length === 0) { %>
+                    <p style="color: var(--text-muted); margin-bottom: 1.25rem;">No documents uploaded.</p>
+                    <% } else { %>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+                        <% docs.forEach(function (doc) { %>
+                        <a href="<%= docUrl(doc.file) %>" target="_blank" rel="noopener"
+                           style="padding: 0.9rem; border: 1px solid var(--surface-border); border-radius: 8px; text-align: center; text-decoration: none; color: inherit; display:block;">
+                            <i data-lucide="file-text" style="color:var(--accent); margin-bottom: 0.4rem;"></i>
+                            <p style="font-size:0.85rem; margin:0;">View <%= doc.label %></p>
+                        </a>
+                        <% }) %>
+                    </div>
+                    <% } %>
+
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        <button type="button" class="btn-primary" style="background:#22c55e; flex:1; min-width:140px;"
+                                onclick="setKycStatus(<%= u.kyc_id %>, 'approve')">
+                            <i data-lucide="check-circle" style="width:16px;height:16px;"></i> Approve
+                        </button>
+                        <button type="button" class="btn-secondary" style="border-color:#ef4444;color:#ef4444; flex:1; min-width:140px;"
+                                onclick="setKycStatus(<%= u.kyc_id %>, 'reject')">
+                            <i data-lucide="x-circle" style="width:16px;height:16px;"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function (e) {
+            var term = e.target.value.toLowerCase();
+            document.querySelectorAll('.kyc-card').forEach(function (card) {
+                var hay = (card.getAttribute('data-search') || '').toLowerCase();
+                card.style.display = hay.indexOf(term) !== -1 ? 'block' : 'none';
+            });
+        });
+    }
+
+    function toggleDetails(id) {
+        var el = document.getElementById('details-' + id);
+        var icon = document.getElementById('icon-' + id);
+        if (!el) return;
+        if (el.style.display === 'none') {
+            el.style.display = 'block';
+            if (icon) icon.setAttribute('data-lucide', 'chevron-up');
+        } else {
+            el.style.display = 'none';
+            if (icon) icon.setAttribute('data-lucide', 'chevron-down');
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function setKycStatus(id, action) {
+        var label = action === 'approve' ? 'Approve' : 'Reject';
+        if (!confirm(label + ' KYC #' + id + '?')) return;
+        try {
+            var res = await fetch('/verify-admin/' + action + '/' + id, { method: 'POST' });
+            var data = await res.json();
+            if (!data.success) {
+                alert(data.message || 'Action failed.');
+                return;
+            }
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            alert('Action failed.');
+        }
+    }
+</script>
+

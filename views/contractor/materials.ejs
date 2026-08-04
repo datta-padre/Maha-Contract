@@ -1,40 +1,170 @@
 <%- include('../partials/header') %>
+<%
+    var materials = (typeof materials !== 'undefined' && Array.isArray(materials)) ? materials : [];
+%>
 <div class="background-animation"></div>
-    
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo">
-                <i data-lucide="hard-hat" class="logo-icon"></i>
-                <span class="notranslate"><span>Build</span>Tender</span>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <div class="logo sidebar-logo">
+            <i data-lucide="hard-hat" class="logo-icon"></i>
+            <span class="notranslate"><span>Build</span>Tender</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/contractor/dashboard"><i data-lucide="shield-check"></i> KYC Overview</a>
+            <a href="/contractor/marketplace"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
+            <a href="/contractor/materials" class="active"><i data-lucide="shopping-bag"></i> Buy Material</a>
+            <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
+            <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
+            <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content shop-page">
+        <header class="dashboard-header material-shop-header">
+            <div>
+                <h2>Vendor Material Procurement</h2>
+                <p>Order materials from verified vendors for your active projects.</p>
             </div>
-            <nav class="sidebar-nav">
-                <a href="/contractor/dashboard"><i data-lucide="shield-check"></i> KYC Overview</a>
-                <a href="/contractor/marketplace"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
-                <a href="/contractor/materials" class="active"><i data-lucide="shopping-bag"></i> Buy Material</a>
-                <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
-                <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
-                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
-
-        <main class="dashboard-content">
-            <header class="dashboard-header">
-                <div>
-                    <h2>Vendor Material Procurement</h2>
-                    <p style="color: var(--text-muted); margin-top: 0.25rem;">Order materials instantly from Verified Local Vendors within nearby Talukas (up to 3 Tal in radius).</p>
-                </div>
-            </header>
-
-            <div class="material-grid">
-                
-                <!-- Empty State until actual Vendors upload properly -->
-                <div class="material-card" style="grid-column: 1 / -1; text-align: center; border-style: dashed; padding: 4rem;">
-                     <i data-lucide="shopping-cart" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: var(--surface-border);"></i>
-                     <h3>No Materials Available Near You</h3>
-                     <p style="color: var(--text-muted);">Vendors near your registered Taluka (within 3 Tal radius) haven't published stock yet.</p>
-                </div>
-
+            <div class="material-shop-count">
+                <i data-lucide="package" style="width:18px;height:18px;"></i>
+                <span><strong><%= materials.length %></strong> materials listed</span>
             </div>
-        </main>
-    </div>
-    <script src="/js/app.js"></script>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="material-shop-toolbar">
+            <label class="material-search" for="materialSearch">
+                <i data-lucide="search"></i>
+                <input type="search" id="materialSearch" placeholder="Search materials..." autocomplete="off">
+            </label>
+            <select id="materialCategoryFilter" class="material-filter" aria-label="Filter by category">
+                <option value="">All categories</option>
+                <option value="Cement & Concrete">Cement & Concrete</option>
+                <option value="Steel & Metal">Steel & Metal</option>
+                <option value="Bricks & Blocks">Bricks & Blocks</option>
+                <option value="Wood & Timber">Wood & Timber</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="material-grid material-grid-full" id="materialGrid">
+            <% if (materials.length === 0) { %>
+            <div class="material-card material-empty">
+                <div class="material-card-content">
+                    <i data-lucide="shopping-bag" class="material-empty-icon"></i>
+                    <h3>No Materials Available</h3>
+                    <p style="color: var(--text-muted); margin: 0;">Vendors haven't published stock yet.</p>
+                </div>
+            </div>
+            <% } else { %>
+                <% materials.forEach(function (mat) { %>
+                    <%
+                        var categoryImages = {
+                            "Cement & Concrete": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80",
+                            "Steel & Metal": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80",
+                            "Bricks & Blocks": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&q=80",
+                            "Wood & Timber": "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400&q=80",
+                            "Plumbing": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&q=80",
+                            "Electrical": "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&q=80",
+                            "Other": "https://images.unsplash.com/photo-1541888086925-920a0b27521c?w=400&q=80"
+                        };
+                        var stock = Number(mat.matQuantity) || 0;
+                        var stockClass = stock <= 0 ? 'out-stock' : (stock <= 20 ? 'low-stock' : 'in-stock');
+                        var stockLabel = stock <= 0 ? 'Out of stock' : (stock <= 20 ? 'Low stock' : 'In stock');
+                        var imageSrc = mat.matImage
+                            ? '/materials/' + mat.matImage
+                            : (categoryImages[mat.matCategory] || categoryImages["Other"]);
+                        var searchText = ((mat.matName || '') + ' ' + (mat.matCategory || '')).toLowerCase();
+                    %>
+                    <article class="material-card"
+                             data-name="<%= searchText %>"
+                             data-category="<%= mat.matCategory %>">
+                        <div class="material-image-wrap">
+                            <img src="<%= imageSrc %>" alt="<%= mat.matName %>" class="material-image" loading="lazy">
+                            <span class="material-stock-badge <%= stockClass %>"><%= stockLabel %></span>
+                        </div>
+                        <div class="material-card-content">
+                            <div>
+                                <span class="material-category"><%= mat.matCategory %></span>
+                                <h3><%= mat.matName %></h3>
+                                <p class="material-meta">
+                                    <i data-lucide="box"></i>
+                                    <span><%= stock.toLocaleString('en-IN') %> units</span>
+                                </p>
+                            </div>
+                            <div class="material-card-footer">
+                                <div class="material-price">
+                                    ₹<%= Number(mat.matPrice).toLocaleString('en-IN') %>
+                                    <span>/ unit</span>
+                                </div>
+                                <% if (stock > 0) { %>
+                                <button type="button" class="btn-primary btn-buy-now">
+                                    <i data-lucide="shopping-bag" style="width:16px;height:16px;"></i>
+                                    Buy Now
+                                </button>
+                                <% } else { %>
+                                <button class="btn-primary" type="button" disabled>Unavailable</button>
+                                <% } %>
+                            </div>
+                        </div>
+                    </article>
+                <% }) %>
+            <% } %>
+        </div>
+    </main>
+</div>
+
+<div class="cart-toast" id="buyToast" role="status" aria-live="polite"></div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    (function () {
+        var searchInput = document.getElementById('materialSearch');
+        var categoryFilter = document.getElementById('materialCategoryFilter');
+        var grid = document.getElementById('materialGrid');
+        var toastEl = document.getElementById('buyToast');
+        var toastTimer;
+        var cards = Array.prototype.slice.call(document.querySelectorAll('#materialGrid .material-card[data-name]'));
+
+        function showToast(message) {
+            if (!toastEl) return;
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () {
+                toastEl.classList.remove('show');
+            }, 1800);
+        }
+
+        if (grid) {
+            grid.addEventListener('click', function (e) {
+                var buyBtn = e.target.closest('.btn-buy-now');
+                if (!buyBtn) return;
+                showToast('Order request sent to vendor');
+            });
+        }
+
+        function filterCards() {
+            var q = (searchInput && searchInput.value || '').trim().toLowerCase();
+            var cat = (categoryFilter && categoryFilter.value) || '';
+            cards.forEach(function (card) {
+                var nameOk = !q || (card.getAttribute('data-name') || '').indexOf(q) !== -1;
+                var catOk = !cat || card.getAttribute('data-category') === cat;
+                card.style.display = nameOk && catOk ? '' : 'none';
+            });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterCards);
+        if (categoryFilter) categoryFilter.addEventListener('change', filterCards);
+    })();
+</script>

@@ -1,0 +1,247 @@
+<%- include('../partials/header') %>
+<%
+    var pending = (typeof pendingUsers !== 'undefined' && Array.isArray(pendingUsers)) ? pendingUsers : [];
+    var approved = (typeof approvedUsers !== 'undefined' && Array.isArray(approvedUsers)) ? approvedUsers : [];
+
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (!amount && amount !== 0) return '—';
+        return '₹' + Number(amount).toLocaleString('en-IN');
+    }
+    function statusBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        if (s === 'approved') return { bg: 'rgba(34,197,94,0.12)', color: '#22c55e', label: 'Approved' };
+        if (s === 'rejected') return { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', label: 'Rejected' };
+        return { bg: 'rgba(234,179,8,0.12)', color: '#eab308', label: 'Pending' };
+    }
+    function payBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
+        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
+        return { color: '#eab308', label: 'Pending' };
+    }
+    function docUrl(file) {
+        if (!file || !String(file).trim()) return '';
+        return '/verify-admin/view-doc?file=' + encodeURIComponent(String(file).trim());
+    }
+    function kycDocs(u) {
+        return [
+            { label: 'Photo', file: u.profile_picture },
+            { label: 'Signature', file: u.digital_signature },
+            { label: 'Qualification', file: u.qualifications },
+            { label: 'License', file: u.licenses },
+            { label: 'Aadhaar', file: u.adhar_card },
+            { label: 'PAN', file: u.pan_card },
+            { label: 'GST', file: u.gst_certificate },
+            { label: 'Income cert', file: u.insurance_certificate },
+            { label: 'NCL', file: u.non_crime_certificate },
+            { label: 'Police NOC', file: u.police_ncertificate },
+            { label: 'Portfolio', file: u.previous_work },
+            { label: 'Stamp', file: u.legal_agreement }
+        ].filter(function (d) { return d.file && String(d.file).trim(); });
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Verify Admin Workspace</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Review contractor KYC submissions from the database.</p>
+            </div>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="dashboard-grid" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <i data-lucide="clock"></i>
+                <h3><%= pending.length %></h3>
+                <p>Pending Verifications</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="check-circle" style="color: #22c55e;"></i>
+                <h3><%= approved.length %></h3>
+                <p>Verified Entities</p>
+            </div>
+        </div>
+
+        <h3 style="margin: 0 0 1rem; font-family: 'Outfit'; color: var(--accent);">Pending Contractor KYC</h3>
+
+        <% if (pending.length === 0) { %>
+        <div class="empty-state" style="margin-bottom: 2.5rem;">
+            <i data-lucide="check-circle" style="width: 48px; height: 48px; margin-bottom: 1rem; color: #22c55e;"></i>
+            <h3>Verification queue is clear</h3>
+            <p>No contractors are awaiting document validation.</p>
+        </div>
+        <% } else { %>
+        <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem;">
+            <% pending.forEach(function (u) {
+                var badge = statusBadge(u.contractor_kyc_status);
+                var pay = payBadge(u.payment_status);
+                var docs = kycDocs(u);
+            %>
+            <div style="background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 1.25rem 1.5rem;">
+                <div style="display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start;">
+                    <div>
+                        <h3 style="margin: 0 0 0.4rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <%= safe(u.full_name) %>
+                            <span style="font-size: 0.75rem; background: <%= badge.bg %>; color: <%= badge.color %>; padding: 0.2rem 0.55rem; border-radius: 999px;"><%= badge.label %></span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">KYC #<%= u.kyc_id %></span>
+                        </h3>
+                        <p style="margin: 0; color: var(--text-muted); font-size: 0.92rem;">
+                            <i data-lucide="mail" style="width:14px;display:inline;vertical-align:middle;"></i> <%= safe(u.email) %>
+                            &nbsp;·&nbsp;
+                            <i data-lucide="phone" style="width:14px;display:inline;vertical-align:middle;"></i> <%= safe(u.phone) %>
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="margin: 0 0 0.25rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Payment</p>
+                        <strong style="color: <%= pay.color %>;"><%= pay.label %></strong>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+                            <%= safe(u.contractor_payment_status) %> · <%= money(u.payment_amount) %>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--surface-border);">
+                    <div>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Experience</p>
+                        <strong><%= safe(u.experience) %> yrs</strong>
+                    </div>
+                    <div>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Specialization</p>
+                        <strong><%= safe(u.specialization) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Availability</p>
+                        <strong><%= safe(u.availability) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Base price</p>
+                        <strong><%= u.base_price_range ? ('₹' + u.base_price_range + '/sq.ft') : '—' %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Location</p>
+                        <strong style="word-break:break-word;"><%= safe(u.location_link) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Submitted</p>
+                        <strong><%= u.created_at ? new Date(u.created_at).toLocaleString('en-IN') : '—' %></strong>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <p style="margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Documents</p>
+                    <% if (docs.length === 0) { %>
+                    <p style="margin:0; color:var(--text-muted); font-size:0.9rem;">No documents uploaded for this KYC.</p>
+                    <% } else { %>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <% docs.forEach(function (doc) { %>
+                        <a href="<%= docUrl(doc.file) %>" target="_blank" rel="noopener"
+                           style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.4rem 0.7rem;border-radius:8px;border:1px solid var(--surface-border);background:rgba(255,255,255,0.03);color:var(--accent);text-decoration:none;font-size:0.82rem;">
+                            <i data-lucide="file-text" style="width:14px;height:14px;"></i> <%= doc.label %>
+                        </a>
+                        <% }) %>
+                    </div>
+                    <% } %>
+                </div>
+
+                <div style="margin-top: 0.85rem; font-size: 0.8rem; color: var(--text-muted);">
+                    Txn: <%= safe(u.payment_transaction_id) %> · Order: <%= safe(u.razorpay_order_id) %>
+                </div>
+
+                <div style="margin-top: 1rem; display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                    <button type="button" class="btn-primary" style="background:#22c55e;"
+                            onclick="setKycStatus(<%= u.kyc_id %>, 'approve')">
+                        <i data-lucide="check-circle" style="width:16px;height:16px;"></i> Approve
+                    </button>
+                    <button type="button" class="btn-secondary" style="border-color:#ef4444;color:#ef4444;"
+                            onclick="setKycStatus(<%= u.kyc_id %>, 'reject')">
+                        <i data-lucide="x-circle" style="width:16px;height:16px;"></i> Reject
+                    </button>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <% } %>
+
+        <h3 style="margin: 0 0 1rem; font-family: 'Outfit'; color: var(--accent);">Recently Verified</h3>
+        <% if (approved.length === 0) { %>
+        <div class="empty-state">
+            <i data-lucide="database" style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--surface-border);"></i>
+            <h3>No verified contractors yet</h3>
+            <p>Approved KYC records will appear here.</p>
+        </div>
+        <% } else { %>
+        <div style="overflow-x: auto; border: 1px solid var(--surface-border); border-radius: 12px; background: rgba(15,23,42,0.45);">
+            <table style="width:100%; border-collapse: collapse; min-width: 720px;">
+                <thead>
+                    <tr style="text-align:left; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em;">
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">ID</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Name</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Email</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Phone</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Payment</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Documents</th>
+                        <th style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% approved.forEach(function (u) {
+                        var pay = payBadge(u.payment_status);
+                        var docs = kycDocs(u);
+                    %>
+                    <tr>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">#<%= u.kyc_id %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.full_name) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.email) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);"><%= safe(u.phone) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border); color: <%= pay.color %>;"><%= pay.label %> · <%= money(u.payment_amount) %></td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border);">
+                            <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">
+                                <% docs.forEach(function (doc) { %>
+                                <a href="<%= docUrl(doc.file) %>" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.8rem;text-decoration:none;"><%= doc.label %></a>
+                                <% }) %>
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 1rem; border-bottom: 1px solid var(--surface-border); color: #22c55e;">Approved</td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    async function setKycStatus(id, action) {
+        var label = action === 'approve' ? 'Approve' : 'Reject';
+        if (!confirm(label + ' KYC #' + id + '?')) return;
+        try {
+            var res = await fetch('/verify-admin/' + action + '/' + id, { method: 'POST' });
+            var data = await res.json();
+            if (!data.success) {
+                alert(data.message || 'Action failed.');
+                return;
+            }
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            alert('Action failed.');
+        }
+    }
+</script>
