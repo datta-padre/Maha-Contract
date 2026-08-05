@@ -94,6 +94,15 @@ CREATE TABLE contractor_kyc(
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seed admin via: node scripts/seed-admin-rbac.js
--- Default: admin@buildtender.com / admin123 (role=admin)
+    CREATE TABLE staff(
+        staff_id INT AUTO_INCREMENT PRIMARY KEY,
+        staff_name VARCHAR(255) NOT NULL,
+        staff_email VARCHAR(255) ,
+        staff_mobile VARCHAR(15) ,
+        staff_password VARCHAR(255),
+        staff_role ENUM('VerifyAdmin','BudgetAdmin','MaterialsAdmin') NOT NULL,
+        staff_status ENUM('active', 'inactive') DEFAULT 'active',
+        staff_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        staff_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
 

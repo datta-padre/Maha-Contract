@@ -1,0 +1,124 @@
+<%- include('../partials/header') %>
+<link rel="stylesheet" href="/css/master-admin.css">
+<%
+    var stats = (typeof staffStats !== 'undefined' && staffStats) ? staffStats : { total: 0, activeCount: 0 };
+    var total = stats.total || 0;
+    var activeCount = stats.activeCount || 0;
+%>
+<div class="background-animation"></div><div class="dashboard-layout ma-simple">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content sm-page">
+        <header class="dashboard-header sm-header">
+            <div>
+                <p class="sm-eyebrow">Staff Management</p>
+                <h2>Hire Employee</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Create desk access for Verify, Budget, or Materials admins.</p>
+            </div>
+            <a href="/master-admin/staff-management/employee-list" class="btn-primary sm-hire-top" style="text-decoration:none;">
+                <i data-lucide="clipboard-list" style="width:16px;height:16px;"></i>
+                View employee list
+            </a>
+        </header>
+
+        <section class="sm-stats">
+            <article class="stat-card sm-stat">
+                <i data-lucide="users"></i>
+                <h3><%= total %></h3>
+                <p>Total staff</p>
+            </article>
+            <article class="stat-card sm-stat">
+                <i data-lucide="shield-check" style="color:#22c55e;"></i>
+                <h3><%= activeCount %></h3>
+                <p>Active</p>
+            </article>
+            <article class="stat-card sm-stat">
+                <i data-lucide="fingerprint" style="color:#eab308;"></i>
+                <h3><%= total - activeCount %></h3>
+                <p>Inactive</p>
+            </article>
+            <article class="stat-card sm-stat">
+                <i data-lucide="key-round"></i>
+                <h3>4</h3>
+                <p>Desk roles</p>
+            </article>
+        </section>
+
+        <div class="sm-grid">
+            <section class="sm-card" id="hireCard">
+                <div class="sm-card-head">
+                    <div>
+                        <h3><i data-lucide="user-plus"></i> New administrator</h3>
+                        <p>Fill in details and assign a desk role.</p>
+                    </div>
+                </div>
+
+                <form class="sm-form" id="hireStaffForm" action="/master-admin/staff-management/hire-employee" method="post" enctype="multipart/form-data"  >
+                    <div class="sm-form-row">
+                        <label>
+                            <span>Full name</span>
+                            <input type="text" id="staffName" name="staffName" placeholder="e.g. Riya Patil" required>
+                        </label>
+                        <label>
+                            <span>Email</span>
+                            <input type="email" id="staffEmail" name="staffEmail" placeholder="name@buildtender.com" required>
+                        </label>
+                    </div>
+                    <div class="sm-form-row">
+                        <label>
+                            <span>Mobile</span>
+                            <input type="tel" id="staffMobile" name="staffMobile" placeholder="10-digit mobile" maxlength="15">
+                        </label>
+                        <label>
+                            <span>Desk role</span>
+                            <select id="staffRole" name="staffRole" required>
+                                <option value="VerifyAdmin">Verify Admin</option>
+                                <option value="BudgetAdmin">Budget Admin</option>
+                                <option value="MaterialsAdmin">Materials Admin</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="sm-form-actions">
+                        <p class="sm-hint"><i data-lucide="info"></i> A temporary passcode is generated on hire.</p>
+                        <button type="submit" class="btn-primary sm-submit">
+                            <i data-lucide="sparkles" style="width:16px;height:16px;"></i>
+                            Generate &amp; hire
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="sm-card sm-roles">
+                <div class="sm-card-head">
+                    <div>
+                        <h3><i data-lucide="layers"></i> Desk roles</h3>
+                        <p>What each admin can access.</p>
+                    </div>
+                </div>
+                <ul class="sm-role-list">
+                    <li>
+                        <span class="sm-badge sm-badge-verify">Verify</span>
+                        <p>KYC review, approve / reject contractors</p>
+                    </li>
+                    <li>
+                        <span class="sm-badge sm-badge-budget">Budget</span>
+                        <p>Tender estimates and pricing oversight</p>
+                    </li>
+                    <li>
+                        <span class="sm-badge sm-badge-materials">Materials</span>
+                        <p>Vendor catalog and stock visibility</p>
+                    </li>
+                    <li>
+                        <span class="sm-badge sm-badge-tender">Tender</span>
+                        <p>Upload and manage published tenders</p>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+</script>

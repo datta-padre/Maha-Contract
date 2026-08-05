@@ -1,0 +1,357 @@
+<%- include('../partials/header') %>
+<link rel="stylesheet" href="/css/master-admin.css">
+<%
+    var page = (typeof activePage !== 'undefined') ? activePage : 'employee-list';
+    var staff = (typeof staff !== 'undefined' && Array.isArray(staff)) ? staff : [];
+    var stats = (typeof staffStats !== 'undefined' && staffStats) ? staffStats : null;
+    if (!staff.length && typeof staffFromDb === 'undefined') {
+        staff = [
+            { name: 'Root Admin', email: 'admin@buildtender.com', role: 'Super Admin', mobile: '9999999999', status: 'active', created: '01/01/2026' },
+            { name: 'Priya Sharma', email: 'verify@buildtender.com', role: 'Verify Admin', mobile: '9876543210', status: 'active', created: '12/03/2026' },
+            { name: 'Amit Desai', email: 'budget@buildtender.com', role: 'Budget Admin', mobile: '9123456780', status: 'active', created: '20/04/2026' },
+            { name: 'Neha Kulkarni', email: 'materials@buildtender.com', role: 'Materials Admin', mobile: '9988776655', status: 'inactive', created: '05/05/2026' }
+        ];
+    }
+    var total = stats ? (stats.total || 0) : staff.length;
+    var activeCount = stats ? (stats.activeCount || 0) : staff.filter(function (s) { return String(s.status || 'active').toLowerCase() === 'active'; }).length;
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout ma-simple">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content sm-page">
+        <header class="dashboard-header sm-header">
+            <div>
+                <p class="sm-eyebrow">Staff Management</p>
+                <h2>Employee List</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Search staff, reset passcodes, or revoke desk access.</p>
+            </div>
+            <a href="/master-admin/staff-management/hire-employee" class="btn-primary sm-hire-top" style="text-decoration:none;">
+                <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+                Hire employee
+            </a>
+        </header>
+
+        <% if (typeof notice !== 'undefined' && notice === 'reset') { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
+            <i data-lucide="key-round"></i>
+            <div>
+                <strong>Passcode reset</strong>
+                <p>New passcode for <strong><%= noticeName %></strong>: <code style="color:#eab308;"><%= noticeCode %></code></p>
+            </div>
+        </div>
+        <% } else if (typeof notice !== 'undefined' && notice === 'fired') { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.08);">
+            <i data-lucide="user-x"></i>
+            <div>
+                <strong>Access revoked</strong>
+                <p><strong><%= noticeName %></strong> is now inactive.</p>
+            </div>
+        </div>
+        <% } else if (typeof notice !== 'undefined' && notice === 'updated') { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(56,189,248,0.35);background:rgba(56,189,248,0.08);">
+            <i data-lucide="check-circle"></i>
+            <div>
+                <strong>Employee updated</strong>
+                <p><strong><%= noticeName %></strong> details were saved.</p>
+            </div>
+        </div>
+        <% } else if (typeof notice !== 'undefined' && notice === 'already') { %>
+        <div class="alert-banner alert-error" style="margin-bottom:1rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Already inactive</strong><p>This employee is already marked inactive.</p></div>
+        </div>
+        <% } else if (typeof notice !== 'undefined' && notice === 'inactive') { %>
+        <div class="alert-banner alert-error" style="margin-bottom:1rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Cannot reset</strong><p>Inactive employees cannot be reset. Reactivate them first.</p></div>
+        </div>
+        <% } else if (typeof notice !== 'undefined' && (notice === 'error' || notice === 'notfound')) { %>
+        <div class="alert-banner alert-error" style="margin-bottom:1rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Action failed</strong><p>Could not update this employee. Try again.</p></div>
+        </div>
+        <% } %>
+
+        <section class="sm-stats">
+            <article class="stat-card sm-stat">
+                <i data-lucide="users"></i>
+                <h3><%= total %></h3>
+                <p>Total staff</p>
+            </article>
+            <article class="stat-card sm-stat">
+                <i data-lucide="shield-check" style="color:#22c55e;"></i>
+                <h3><%= activeCount %></h3>
+                <p>Active</p>
+            </article>
+            <article class="stat-card sm-stat">
+                <i data-lucide="fingerprint" style="color:#eab308;"></i>
+                <h3><%= total - activeCount %></h3>
+                <p>Inactive</p>
+            </article>
+            <article class="stat-card sm-stat">
+                <i data-lucide="key-round"></i>
+                <h3>4</h3>
+                <p>Desk roles</p>
+            </article>
+        </section>
+
+        <section class="sm-card sm-table-card">
+            <div class="sm-card-head sm-table-toolbar">
+                <div>
+                    <h3><i data-lucide="clipboard-list"></i> Staff directory</h3>
+                    <p>Filter, export, or manage desk access.</p>
+                </div>
+                <div class="ma-export-bar">
+                    <button type="button" class="ma-export-btn" id="btnCopy" title="Copy table">
+                        <i data-lucide="copy"></i> Copy
+                    </button>
+                    <button type="button" class="ma-export-btn" id="btnExcel" title="Download Excel CSV">
+                        <i data-lucide="file-spreadsheet"></i> Excel
+                    </button>
+                    <button type="button" class="ma-export-btn" id="btnPdf" title="Save / print as PDF">
+                        <i data-lucide="file-text"></i> PDF
+                    </button>
+                    <button type="button" class="ma-export-btn" id="btnPrint" title="Print">
+                        <i data-lucide="printer"></i> Print
+                    </button>
+                </div>
+            </div>
+
+            <div class="sm-filter-bar">
+                <input type="search" id="staffSearch" class="sm-search" placeholder="Search name, email, role…">
+                <select id="staffStatusFilter" class="sm-filter-select" aria-label="Filter by status">
+                    <option value="all">All status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <select id="staffRoleFilter" class="sm-filter-select" aria-label="Filter by role">
+                    <option value="all">All roles</option>
+                    <option value="Verify Admin">Verify Admin</option>
+                    <option value="Budget Admin">Budget Admin</option>
+                    <option value="Materials Admin">Materials Admin</option>
+                    <option value="Super Admin">Super Admin</option>
+                </select>
+            </div>
+
+            <div class="sm-table-wrap">
+                <table class="sm-table" id="staffTable">
+                    <thead>
+                        <tr>
+                            <th>Staff</th>
+                            <th>Role</th>
+                            <th>Mobile</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% staff.forEach(function (member) {
+                            var isRoot = String(member.role || '').toLowerCase().indexOf('super') !== -1;
+                            var isActive = String(member.status || 'active').toLowerCase() === 'active';
+                            var statusKey = isActive ? 'active' : 'inactive';
+                            var hay = [member.name, member.email, member.role, member.mobile, statusKey].join(' ').toLowerCase();
+                            var joined = member.created ? new Date(member.created).toLocaleString('en-IN') : '—';
+                        %>
+                        <tr data-search="<%= hay %>" data-status="<%= statusKey %>" data-role="<%= member.role || '' %>">
+                            <td>
+                                <div class="sm-person">
+                                    <div class="sm-avatar"><%= String(member.name || member.email || '?').charAt(0).toUpperCase() %></div>
+                                    <div>
+                                        <strong><%= member.name || '—' %></strong>
+                                        <small><%= member.email || '—' %></small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="sm-badge"><%= member.role || '—' %></span></td>
+                            <td><%= member.mobile || '—' %></td>
+                            <td>
+                                <span class="sm-status <%= isActive ? 'is-on' : 'is-off' %>">
+                                    <%= isActive ? 'Active' : 'Inactive' %>
+                                </span>
+                            </td>
+                            <td><%= joined %></td>
+                            <td>
+                                <div class="sm-actions">
+                                    <% if (!isRoot && member.id) { %>
+                                    <a href="/master-admin/staff-management/employee-list/edit/<%= member.id %>" class="sm-btn sm-btn-edit" title="Edit employee">Edit</a>
+                                    <% if (isActive) { %>
+                                    <form method="post" action="/master-admin/staff-management/employee-list/reset" class="sm-inline-form">
+                                        <input type="hidden" name="staffId" value="<%= member.id %>">
+                                        <button type="submit" class="sm-btn sm-btn-ghost" title="Reset passcode">Reset</button>
+                                    </form>
+                                    <form method="post" action="/master-admin/staff-management/employee-list/fire" class="sm-inline-form" onsubmit="return confirm('Fire this employee? Their status will be set to inactive.');">
+                                        <input type="hidden" name="staffId" value="<%= member.id %>">
+                                        <button type="submit" class="sm-btn sm-btn-danger" title="Set status inactive">Fire</button>
+                                    </form>
+                                    <% } else { %>
+                                    <span class="sm-root-note">Inactive</span>
+                                    <% } %>
+                                    <% } else if (isRoot) { %>
+                                    <span class="sm-root-note">Protected root</span>
+                                    <% } %>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    (function () {
+        var table = document.getElementById('staffTable');
+        var search = document.getElementById('staffSearch');
+        var statusFilter = document.getElementById('staffStatusFilter');
+        var roleFilter = document.getElementById('staffRoleFilter');
+        var toastTimer;
+
+        function showToast(msg) {
+            var el = document.getElementById('maExportToast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'maExportToast';
+                el.className = 'ma-export-toast';
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () { el.classList.remove('show'); }, 1800);
+        }
+
+        function applyFilters() {
+            if (!table) return;
+            var q = (search && search.value ? search.value : '').trim().toLowerCase();
+            var status = statusFilter ? statusFilter.value : 'all';
+            var role = roleFilter ? roleFilter.value : 'all';
+
+            table.querySelectorAll('tbody tr').forEach(function (row) {
+                var hay = row.getAttribute('data-search') || '';
+                var rowStatus = row.getAttribute('data-status') || '';
+                var rowRole = row.getAttribute('data-role') || '';
+                var matchSearch = !q || hay.indexOf(q) !== -1;
+                var matchStatus = status === 'all' || rowStatus === status;
+                var matchRole = role === 'all' || rowRole === role;
+                row.style.display = matchSearch && matchStatus && matchRole ? '' : 'none';
+            });
+        }
+
+        if (search) search.addEventListener('input', applyFilters);
+        if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+        if (roleFilter) roleFilter.addEventListener('change', applyFilters);
+
+        function visibleRows() {
+            if (!table) return [];
+            return Array.prototype.slice.call(table.querySelectorAll('tbody tr')).filter(function (tr) {
+                return tr.style.display !== 'none';
+            });
+        }
+
+        function tableMatrix() {
+            var headers = ['Name', 'Email', 'Role', 'Mobile', 'Status', 'Joined'];
+            var rows = visibleRows().map(function (tr) {
+                var cells = tr.cells;
+                var name = (cells[0] && cells[0].querySelector('strong')) ? cells[0].querySelector('strong').innerText.trim() : '';
+                var email = (cells[0] && cells[0].querySelector('small')) ? cells[0].querySelector('small').innerText.trim() : '';
+                return [
+                    name,
+                    email,
+                    cells[1] ? cells[1].innerText.trim() : '',
+                    cells[2] ? cells[2].innerText.trim() : '',
+                    cells[3] ? cells[3].innerText.trim() : '',
+                    cells[4] ? cells[4].innerText.trim() : ''
+                ];
+            });
+            return [headers].concat(rows);
+        }
+
+        function toCsv(matrix) {
+            return matrix.map(function (row) {
+                return row.map(function (cell) {
+                    var v = String(cell == null ? '' : cell);
+                    if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+                    return v;
+                }).join(',');
+            }).join('\n');
+        }
+
+        var btnCopy = document.getElementById('btnCopy');
+        if (btnCopy) {
+            btnCopy.addEventListener('click', async function () {
+                var matrix = tableMatrix();
+                var text = matrix.map(function (r) { return r.join('\t'); }).join('\n');
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('Table copied');
+                } catch (e) {
+                    showToast('Copy failed');
+                }
+            });
+        }
+
+        var btnExcel = document.getElementById('btnExcel');
+        if (btnExcel) {
+            btnExcel.addEventListener('click', function () {
+                var csv = '\uFEFF' + toCsv(tableMatrix());
+                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'buildtender-staff.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Excel CSV downloaded');
+            });
+        }
+
+        function openPrintView(forPdf) {
+            var matrix = tableMatrix();
+            var html = '<!DOCTYPE html><html><head><title>BuildTender Staff</title>';
+            html += '<style>body{font-family:Arial,sans-serif;padding:24px;color:#111}';
+            html += 'h1{font-size:18px;margin:0 0 4px}p{color:#555;margin:0 0 16px;font-size:13px}';
+            html += 'table{width:100%;border-collapse:collapse;font-size:12px}';
+            html += 'th,td{border:1px solid #ccc;padding:8px;text-align:left;vertical-align:top}';
+            html += 'th{background:#f3f4f6}</style></head><body>';
+            html += '<h1>BuildTender — Staff Directory</h1>';
+            html += '<p>' + (forPdf ? 'Save as PDF from the print dialog.' : 'Print preview') + ' · ' + new Date().toLocaleString('en-IN') + '</p>';
+            html += '<table><thead><tr>';
+            matrix[0].forEach(function (h) { html += '<th>' + h + '</th>'; });
+            html += '</tr></thead><tbody>';
+            matrix.slice(1).forEach(function (row) {
+                html += '<tr>';
+                row.forEach(function (c) { html += '<td>' + String(c).replace(/</g, '&lt;') + '</td>'; });
+                html += '</tr>';
+            });
+            html += '</tbody></table></body></html>';
+
+            var w = window.open('', '_blank', 'width=1000,height=700');
+            if (!w) {
+                showToast('Pop-up blocked');
+                return;
+            }
+            w.document.write(html);
+            w.document.close();
+            w.focus();
+            setTimeout(function () { w.print(); }, 300);
+        }
+
+        var btnPrint = document.getElementById('btnPrint');
+        if (btnPrint) btnPrint.addEventListener('click', function () { openPrintView(false); });
+
+        var btnPdf = document.getElementById('btnPdf');
+        if (btnPdf) {
+            btnPdf.addEventListener('click', function () {
+                openPrintView(true);
+                showToast('Use Print → Save as PDF');
+            });
+        }
+    })();
+</script>
