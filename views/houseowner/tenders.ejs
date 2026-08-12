@@ -29,41 +29,327 @@
                 </div>
             </header>
 
-            <div id="tenderContainer">
-                 <table id="tenderTable" class="table table-bordered">
+            <%
+                function safe(val) {
+                    return (val === undefined || val === null || val === '') ? '-' : val;
+                }
+                function escAttr(val) {
+                    return String(val || '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                }
+                function tenderDoc(file) {
+                    if (!file || String(file).trim() === '') {
+                        return '<span class="tender-doc-btn tender-doc-btn-disabled" style="cursor:not-allowed;"><i data-lucide="file-text"></i> view-doc</span>';
+                    }
+                    var name = String(file);
+                    var href = '/tenders/' + encodeURIComponent(name);
+                    return '<a href="' + href + '" target="_blank" rel="noopener" class="tender-doc-btn" title="' + name + '"><i data-lucide="file-text"></i> view-doc</a>';
+                }
+
+                function budgetBadge(status) {
+                    var s = String(status || 'pending').toLowerCase();
+                    if (s === 'estimated') {
+                        return { cls: 'is-ok', label: 'Estimated' };
+                    }
+                    return { cls: 'is-warn', label: 'Pending' };
+                }
+                function payBadge(status) {
+                    var s = String(status || 'pending').toLowerCase();
+                    if (s === 'paid') return { cls: 'is-ok', label: 'Paid' };
+                    if (s === 'failed') return { cls: 'is-bad', label: 'Failed' };
+                    return { cls: 'is-warn', label: 'Pending' };
+                }
+
+                function viewLocation(loc) {
+                    var location = (loc === undefined || loc === null) ? '' : String(loc).trim();
+                    if (!location) return '<span class="tender-doc-btn tender-doc-btn-disabled" style="cursor:not-allowed;"><i data-lucide="map-pin"></i> view Location</span>';
+                    var mapsUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(location);
+                    return '<a href="' + mapsUrl + '" target="_blank" rel="noopener" class="tender-doc-btn" title="' + location + '"><i data-lucide="map-pin"></i> view Location</a>';
+                }
+
+                function viewTenderA4(t) {
+                    var id = t && t.tender_id ? t.tender_id : '';
+                    return '<button type="button" class="tender-action-btn tender-doc-btn tender-doc-btn-a4" onclick="window.openTenderA4(this)" ' +
+                        'data-tender-id="' + escAttr(id) + '" ' +
+                        'data-owner-name="' + escAttr(owner_details && owner_details.username ? owner_details.username : '') + '" ' +
+                        'data-owner-email="' + escAttr(owner_details && owner_details.email ? owner_details.email : '') + '" ' +
+                        'data-owner-mobile="' + escAttr(owner_details && owner_details.mobile ? owner_details.mobile : '') + '" ' +
+                        'data-construction-code="' + escAttr(t.constructionCode) + '" ' +
+                        'data-plot-area="' + escAttr(t.plotArea) + '" ' +
+                        'data-soil-type="' + escAttr(t.soilType) + '" ' +
+                        'data-location="' + escAttr(t.plotLocation) + '" ' +
+                        'data-bhk="' + escAttr(t.bhk) + '" ' +
+                        'data-floors="' + escAttr(t.floors) + '" ' +
+                        'data-budget="' + escAttr(t.budget) + '" ' +
+                        'data-materials-provided="' + escAttr(t.materialsProvided) + '" ' +
+                        'data-finalized-plan="' + escAttr(t.finalizedPlan) + '" ' +
+                        'data-ancillary-requirements="' + escAttr(t.ancillary_requirements) + '" ' +
+                        'data-external-works="' + escAttr(t.externalWorks) + '" ' +
+                        'data-boundary-wall-type="' + escAttr(t.boundaryWallType) + '" ' +
+                        'data-construction-time="' + escAttr(t.constructionTime) + '" ' +
+                        'data-special-instructions="' + escAttr(t.specialInstructions) + '" ' +
+                        'data-architectural-plan="' + escAttr(t.architectural_plan) + '" ' +
+                        'data-plot-documents="' + escAttr(t.Plot_documents) + '" ' +
+                        'data-house-owner-digital-signature="' + escAttr(t.house_owner_digital_signature) + '" ' +
+                        'data-budget-status="' + escAttr(t.budget_status || 'pending') + '" ' +
+                        'data-estimated-cost="' + escAttr(t.estimated_cost) + '" ' +
+                        'data-payment-status="' + escAttr(t.payment_status) + '" ' +
+                        'data-payment-amount="' + escAttr(t.payment_amount) + '" ' +
+                        'data-payment-transaction-id="' + escAttr(t.payment_transaction_id) + '" ' +
+                        'data-razorpay-order-id="' + escAttr(t.razorpay_order_id) + '" ' +
+                        'data-created-at="' + escAttr(t.created_at) + '" ' +
+                        '> <i data-lucide="eye"></i> View A4</button>';
+                }
+            %>
+
+            <style>
+                .dashboard-content { overflow-x: hidden; overflow-y: auto; }
+                .tenders-panel{
+                    background: rgba(15,23,42,0.55);
+                    border: 1px solid var(--surface-border);
+                    border-radius: 16px;
+                    overflow: hidden;
+                }
+                .tender-toolbar{
+                    display: flex;
+                    gap: 0.7rem;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    padding: 1rem 1.1rem;
+                    border-bottom: 1px solid var(--surface-border);
+                    background: rgba(2,6,23,0.28);
+                }
+                .tender-search{
+                    position: relative;
+                    flex: 1 1 240px;
+                    min-width: 200px;
+                }
+                .tender-search i{
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 16px;
+                    height: 16px;
+                    color: var(--text-muted);
+                }
+                .tender-search input,
+                .tender-toolbar select{
+                    width: 100%;
+                    padding: 0.7rem 0.85rem 0.7rem 2.4rem;
+                    border-radius: 10px;
+                    background: rgba(15,23,42,0.75);
+                    border: 1px solid var(--surface-border);
+                    color: #fff;
+                    font: inherit;
+                    font-size: 0.9rem;
+                    outline: none;
+                }
+                .tender-toolbar select{
+                    width: auto;
+                    min-width: 150px;
+                    padding-left: 0.85rem;
+                    cursor: pointer;
+                }
+                .tender-search input:focus,
+                .tender-toolbar select:focus{
+                    border-color: rgba(56,189,248,0.55);
+                    box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+                }
+                .tender-count{
+                    margin-left: auto;
+                    font-size: 0.78rem;
+                    color: var(--text-muted);
+                    white-space: nowrap;
+                }
+                #tenderTable{
+                    width: 100%;
+                    margin: 0;
+                    table-layout: auto;
+                }
+                #tenderTable th,
+                #tenderTable td{
+                    padding: 0.85rem 0.75rem;
+                    font-size: 0.84rem;
+                    vertical-align: middle;
+                }
+                #tenderTable td:nth-child(n+6){
+                    white-space: nowrap;
+                }
+                #tenderTable thead th{
+                    font-size: 0.72rem;
+                    letter-spacing: 0.06em;
+                    background: rgba(255,255,255,0.03);
+                }
+                #tenderTable tbody tr:hover td{
+                    background: rgba(56,189,248,0.05);
+                }
+                .status-pill{
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 0.22rem 0.65rem;
+                    border-radius: 999px;
+                    font-size: 0.74rem;
+                    font-weight: 700;
+                    letter-spacing: 0.02em;
+                }
+                .status-pill.is-ok{ color:#4ade80; background:rgba(34,197,94,0.12); }
+                .status-pill.is-warn{ color:#facc15; background:rgba(234,179,8,0.12); }
+                .status-pill.is-bad{ color:#f87171; background:rgba(239,68,68,0.12); }
+                .tender-doc-btn,
+                .tender-del-btn{
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.3rem;
+                    height: 32px;
+                    padding: 0 0.7rem;
+                    border-radius: 8px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                    cursor: pointer;
+                    border: 1px solid transparent;
+                }
+                .tender-doc-btn i,
+                .tender-del-btn i{ width: 13px; height: 13px; }
+                .tender-doc-btn{
+                    background: rgba(56,189,248,0.10);
+                    border-color: rgba(56,189,248,0.32);
+                    color: #7dd3fc;
+                }
+                .tender-doc-btn:hover{
+                    background: rgba(56,189,248,0.18);
+                    color: #e0f2fe;
+                }
+                .tender-doc-btn-disabled{
+                    background: rgba(255,255,255,0.03);
+                    border-color: var(--surface-border);
+                    color: var(--text-muted);
+                    cursor: not-allowed;
+                }
+                .tender-doc-btn-a4{
+                    background: rgba(167,139,250,0.12);
+                    border-color: rgba(167,139,250,0.35);
+                    color: #c4b5fd;
+                }
+                .tender-doc-btn-a4:hover{
+                    background: rgba(167,139,250,0.2);
+                    color: #ede9fe;
+                }
+                .tender-del-btn{
+                    background: rgba(239,68,68,0.08);
+                    border-color: rgba(239,68,68,0.35);
+                    color: #fca5a5;
+                }
+                .tender-del-btn:hover{
+                    background: rgba(239,68,68,0.16);
+                    color: #fecaca;
+                }
+                .tender-actions{
+                    display: flex;
+                    gap: 0.4rem;
+                    align-items: center;
+                }
+                .tender-empty{
+                    padding: 2.5rem 1.5rem;
+                    text-align: center;
+                    color: var(--text-muted);
+                }
+                .tender-empty i{
+                    width: 40px;
+                    height: 40px;
+                    margin-bottom: 0.7rem;
+                    color: var(--surface-border);
+                }
+            </style>
+
+            <div id="tenderContainer" class="tenders-panel">
+                <% if (typeof notice !== 'undefined' && notice) { %>
+                <div class="alert-banner" style="margin:1rem 1.1rem 0;border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.08);">
+                    <i data-lucide="trash-2"></i>
+                    <div>
+                        <strong><%= notice === 'deleted' ? 'Tender deleted' : 'Notice' %></strong>
+                        <p style="margin:0;color:var(--text-muted);">Update complete.</p>
+                    </div>
+                </div>
+                <% } %>
+
+                <div class="tender-toolbar">
+                    <div class="tender-search">
+                        <i data-lucide="search"></i>
+                        <input id="tenderSearch" type="search" placeholder="Search tenders, owner, code, location...">
+                    </div>
+                    <select id="tenderStatusFilter">
+                        <option value="all">All payment</option>
+                        <option value="paid">Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <select id="tenderBudgetFilter">
+                        <option value="all">All budget</option>
+                        <option value="pending">Budget pending</option>
+                        <option value="estimated">Estimated</option>
+                    </select>
+                    <span class="tender-count"><%= (tenders && tenders.length) ? tenders.length : 0 %> tenders</span>
+                </div>
+                 <table id="tenderTable">
                     <thead>
                         <tr>
-                            <th>Tender ID</th>
-                            <th>Tender Name</th>
-                            <th>Tender Description</th>
-                            <th>Status</th>
+                            <th>Sr</th>
+                            <th>Owner</th>
+                            <th>Code</th>
+                            <th>Payment</th>
+                            <th>Budget</th>
+                            <th>Plan</th>
+                            <th>Plot docs</th>
+                            <th>Location</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% if (tenders && tenders.length > 0) { %>
-                            <% tenders.forEach(function(t) { %>
-                                <tr>
-                                    <td><%= t.tender_id %></td>
-                                    <td><%= t.plotArea || '-' %></td>
+                            <% tenders.forEach(function(t, i) {
+                                var budget = budgetBadge(t.budget_status);
+                                var pay = payBadge(t.payment_status);
+                            %>
+                                <tr data-search="<%= [t.tender_id, t.constructionCode, t.plotArea, t.plotLocation, t.payment_status, t.payment_amount, t.budget_status || 'pending', budget.label].join(' ').toLowerCase() %>"
+                                    data-status="<%= t.payment_status || '' %>"
+                                    data-budget="<%= (t.budget_status || 'pending').toLowerCase() %>">
+                                    <td><%= i+1 %></td>
+                                    <td><strong><%= owner_details && owner_details.username ? owner_details.username : (t.owner_name || '-') %></strong></td>
+                                    <td><%= safe(t.constructionCode) %></td>
+                                    <td><span class="status-pill <%= pay.cls %>"><%= pay.label %></span></td>
+                                    <td><span class="status-pill <%= budget.cls %>"><%= budget.label %></span></td>
+                                    <td><%- tenderDoc(t.architectural_plan) %></td>
+                                    <td><%- tenderDoc(t.Plot_documents) %></td>
+                                    <td><%- viewLocation(t.plotLocation) %></td>
                                     <td>
-                                        <%= (t.plotLocation || '').toString().slice(0, 60) || '-' %>
-                                        <%= t.plotLocation && String(t.plotLocation).length > 60 ? '...' : '' %>
-                                    </td>
-                                    <td>
-                                        <% if (t.payment_status === 'paid') { %>
-                                            <span style="color:#22c55e; font-weight:700;">Paid</span>
-                                        <% } else if (t.payment_status === 'failed') { %>
-                                            <span style="color:#ef4444; font-weight:700;">Failed</span>
-                                        <% } else { %>
-                                            <span style="color: #f97316; font-weight:700;">Pending</span>
+                                        <% if (t && t.tender_id) { %>
+                                            <div class="tender-actions">
+                                                <%- viewTenderA4(t) %>
+                                                <form method="post" action="/houseowner/delete-tender/<%= t.tender_id %>" style="display:inline;margin:0;">
+                                                    <button type="submit" class="tender-del-btn" onclick="return confirm('Delete this tender? This cannot be undone.');">
+                                                        <i data-lucide="trash-2"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
                                         <% } %>
                                     </td>
                                 </tr>
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="4" style="text-align:center; color: var(--text-muted);">
-                                    No tenders found.
+                                <td colspan="9">
+                                    <div class="tender-empty">
+                                        <i data-lucide="file-text"></i>
+                                        <p>No tenders found.</p>
+                                    </div>
                                 </td>
                             </tr>
                         <% } %>
@@ -73,4 +359,129 @@
 
         </main>
     </div>
+    <script>
+        (function () {
+            var search = document.getElementById('tenderSearch');
+            var statusFilter = document.getElementById('tenderStatusFilter');
+            var budgetFilter = document.getElementById('tenderBudgetFilter');
+            var table = document.getElementById('tenderTable');
+
+            if (!table) return;
+
+            function applyFilters() {
+                var q = (search && search.value ? search.value : '').trim().toLowerCase();
+                var s = statusFilter ? statusFilter.value : 'all';
+                var b = budgetFilter ? budgetFilter.value : 'all';
+
+                var rows = table.querySelectorAll('tbody tr');
+                rows.forEach(function (row) {
+                    var hay = row.getAttribute('data-search') || '';
+                    var rowStatus = row.getAttribute('data-status') || '';
+                    var rowBudget = row.getAttribute('data-budget') || '';
+
+                    var matchSearch = !q || hay.indexOf(q) !== -1;
+                    var matchStatus = s === 'all' || rowStatus === s;
+                    var matchBudget = b === 'all' || rowBudget === b;
+
+                    row.style.display = (matchSearch && matchStatus && matchBudget) ? '' : 'none';
+                });
+            }
+
+            if (search) search.addEventListener('input', applyFilters);
+            if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+            if (budgetFilter) budgetFilter.addEventListener('change', applyFilters);
+            applyFilters();
+        })();
+    </script>
+
     <script src="/js/app.js"></script>
+    <script>if (window.lucide) lucide.createIcons();</script>
+    <script>
+        window.openTenderA4 = function (btn) {
+            if (!btn || !btn.dataset) return;
+            var d = btn.dataset;
+
+            var w = window.open('about:blank', 'TenderA4_' + (d.tenderId || ''), 'width=980,height=720');
+            if (!w) {
+                alert('Pop-up blocked. Please allow pop-ups to view the A4 tender page.');
+                return;
+            }
+
+            var html = '<!DOCTYPE html><html><head><meta charset="utf-8" />';
+            html += '<title>Tender A4</title>';
+            html += '<style>';
+            html += '@page{size:A4;margin:18mm;}';
+            html += 'body{font-family:Arial,sans-serif;color:#111;}';
+            html += '.h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}';
+            html += '.t{font-size:18px;font-weight:700;margin:0;}';
+            html += '.sub{color:#555;font-size:13px;margin:4px 0 0;}';
+            html += '.sec{margin-top:16px;}';
+            html += '.sec-title{font-weight:700;color:#444;font-size:13px;margin:0 0 8px;}';
+            html += '.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}';
+            html += '.card{border:1px solid #ddd;border-radius:10px;padding:10px;}';
+            html += '.k{color:#666;font-size:12px;margin-bottom:4px;}';
+            html += '.v{font-size:13px;word-break:break-word;}';
+            html += 'table{width:100%;border-collapse:collapse;}';
+            html += 'th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top;}';
+            html += 'th{background:#f3f4f6;font-size:12px;}';
+            html += '</style></head><body>';
+
+            html += '<div class="h">';
+            html += '<div><p class="t">BuildTender — Tender #' + (d.tenderId || '') + '</p>';
+            html += '<p class="sub">Owner + Tender Information · ' + new Date().toLocaleString('en-IN') + '</p></div>';
+            html += '<div style="color:#666;font-size:12px;">A4 View</div>';
+            html += '</div>';
+
+            html += '<div class="sec"><div class="sec-title">Owner</div>';
+            html += '<table><tbody>';
+            html += '<tr><th style="width:30%;">Name</th><td>' + (d.ownerName || '—') + '</td></tr>';
+            html += '<tr><th>Email</th><td>' + (d.ownerEmail || '—') + '</td></tr>';
+            html += '<tr><th>Mobile</th><td>' + (d.ownerMobile || '—') + '</td></tr>';
+            html += '</tbody></table></div>';
+
+            html += '<div class="sec"><div class="sec-title">Tender Details</div>';
+            html += '<div class="grid">';
+            html += '<div class="card"><div class="k">Construction Code</div><div class="v">' + (d.constructionCode || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Plot Area</div><div class="v">' + (d.plotArea || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Soil Type</div><div class="v">' + (d.soilType || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Location</div><div class="v">' + (d.location || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">BHK / Floors</div><div class="v">' + (d.bhk || '—') + ' · ' + (d.floors || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Owner Budget</div><div class="v">' + (d.budget || '—') + '</div></div>';
+            html += '</div></div>';
+
+            html += '<div class="sec"><div class="sec-title">Materials & Plan</div>';
+            html += '<div class="grid">';
+            html += '<div class="card"><div class="k">Materials Provided</div><div class="v">' + (d.materialsProvided || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Finalized Plan</div><div class="v">' + (d.finalizedPlan || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Construction Time</div><div class="v">' + (d.constructionTime || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Submitted</div><div class="v">' + (d.createdAt || '—') + '</div></div>';
+            html += '</div></div>';
+
+            html += '<div class="sec"><div class="sec-title">Requirements & Instructions</div>';
+            html += '<div class="card" style="margin-bottom:10px;"><div class="k">Ancillary Requirements</div><div class="v">' + (d.ancillaryRequirements || '—') + '</div></div>';
+            html += '<div class="card" style="margin-bottom:10px;"><div class="k">External Works</div><div class="v">' + (d.externalWorks || '—') + '</div></div>';
+            html += '<div class="card" style="margin-bottom:10px;"><div class="k">Boundary Wall Type</div><div class="v">' + (d.boundaryWallType || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Special Instructions</div><div class="v">' + (d.specialInstructions || '—') + '</div></div>';
+            html += '</div>';
+
+            html += '<div class="sec"><div class="sec-title">Documents (file names) & Payment</div>';
+            html += '<div class="grid">';
+            html += '<div class="card"><div class="k">Architectural Plan</div><div class="v">' + (d.architecturalPlan || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Plot Documents</div><div class="v">' + (d.plotDocuments || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Digital Signature</div><div class="v">' + (d.houseOwnerDigitalSignature || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Payment</div><div class="v">' + (d.paymentStatus || '—') + ' · ' + (d.paymentAmount || '—') + '</div></div>';
+            html += '<div class="card"><div class="k">Budget Status</div><div class="v">' + (d.budgetStatus || 'pending') + (d.estimatedCost ? ' · Est. ' + d.estimatedCost : '') + '</div></div>';
+            html += '</div></div>';
+
+            html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;gap:10px;">';
+            html += '<button onclick="window.print()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#111;color:#fff;cursor:pointer;">Print</button>';
+            html += '<button onclick="window.close()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#111;cursor:pointer;">Close</button>';
+            html += '</div>';
+
+            html += '</body></html>';
+
+            w.document.write(html);
+            w.document.close();
+            w.focus();
+        };
+    </script>

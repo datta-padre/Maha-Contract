@@ -22,7 +22,7 @@ const razorpay = new Razorpay({
 
 
 router.get('/overview',houseownerOnly, async (req, res) => {
-    var result = await exe(`SELECT COUNT(tender_id) as total_tenders FROM tenders`);
+    var result = await exe(`SELECT COUNT(tender_id) as total_tenders FROM tenders WHERE user_id = ?`, [req.user_id]);
         res.render('houseowner/overview', { total_tenders: result[0].total_tenders });
     });
 
@@ -35,14 +35,33 @@ router.get('/post', houseownerOnly, (req, res) => {
 });
 
 router.get('/tenders', houseownerOnly, async(req, res) => {
+    try {
+        // Only fetch tenders created by this houseowner.
+        var tenders = await exe(
+            `SELECT * FROM tenders WHERE user_id = ? ORDER BY tender_id DESC`,
+            [req.user_id]
+        );
+        if (!Array.isArray(tenders)) tenders = [];
 
-    var sql = `SELECT * FROM tenders  `
-    var value = [req.user_id]
+        // Optional: owner details (some templates don't use it, but keep it safe).
+        var owners = await exe(
+            `SELECT * FROM users WHERE user_id = ? LIMIT 1`,
+            [req.user_id]
+        );
+        var owner_details = (Array.isArray(owners) && owners[0]) ? owners[0] : {};
 
-     var data = await exe(sql,value)
+        console.log("owner_details",owner_details);
+        console.log("tenders",tenders);
 
-    if (!Array.isArray(data)) data = [];
-    res.render('houseowner/tenders', { tenders: data });
+        res.render('houseowner/tenders', {
+            tenders: tenders,
+            owner_details: owner_details,
+            notice: req.query.notice || ''
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('houseowner/tenders', { tenders: [], owner_details: {}, notice: '' });
+    }
 });
 
 router.get('/materials', houseownerOnly, async (req, res) => {
@@ -142,6 +161,45 @@ router.post('/save-tender', houseownerOnly, async (req, res) => {
 
     var result = await exe(query, values);
     res.redirect('/houseowner/tenders');
+});
+
+// Delete tender (only for the logged-in houseowner)
+router.post('/delete-tender/:id', houseownerOnly, async (req, res) => {
+    try {
+        var tenderId = Number(req.params.id);
+        if (!tenderId) return res.redirect('/houseowner/tenders');
+
+        var rows = await exe(
+            `SELECT tender_id, architectural_plan, Plot_documents, house_owner_digital_signature
+             FROM tenders
+             WHERE tender_id = ? AND user_id = ? LIMIT 1`,
+            [tenderId, req.user_id]
+        );
+
+        if (!Array.isArray(rows) || !rows.length) return res.redirect('/houseowner/tenders');
+
+        var t = rows[0];
+
+        // Best-effort file cleanup
+        var files = [t.architectural_plan, t.Plot_documents, t.house_owner_digital_signature]
+            .filter(function (x) { return x && String(x).trim(); })
+            .map(function (x) { return String(x).trim(); });
+
+        for (var i = 0; i < files.length; i++) {
+            try {
+                var p = 'public/tenders/' + files[i];
+                if (fs.existsSync(p)) fs.unlinkSync(p);
+            } catch (e) {
+                // Ignore file delete errors
+            }
+        }
+
+        await exe(`DELETE FROM tenders WHERE tender_id = ? AND user_id = ?`, [tenderId, req.user_id]);
+        return res.redirect('/houseowner/tenders?notice=deleted');
+    } catch (err) {
+        console.error(err);
+        return res.redirect('/houseowner/tenders');
+    }
 });
 
 module.exports = router;

@@ -1,0 +1,350 @@
+<%- include('../partials/header') %>
+<%
+    var tender = (typeof tender !== 'undefined' && tender) ? tender : {};
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function viewDoc(file, label) {
+        var name = (file === undefined || file === null) ? '' : String(file).trim();
+        var text = escAttr(label || 'document');
+        if (!name || name === '—') {
+            return '<span class="ba-doc-btn ba-doc-btn-off"><i data-lucide="file-x"></i> ' + text + '</span>';
+        }
+        return '<a class="ba-doc-btn" href="/tenders/' + encodeURIComponent(name) + '" target="_blank" rel="noopener" title="' + escAttr(name) + '"><i data-lucide="file-text"></i> ' + text + '</a>';
+    }
+    function viewLocation(loc) {
+        var location = (loc === undefined || loc === null) ? '' : String(loc).trim();
+        if (!location || location === '—') {
+            return '<span class="ba-doc-btn ba-doc-btn-off"><i data-lucide="map-pin"></i> view Location</span>';
+        }
+        return '<a class="ba-doc-btn" href="https://www.google.com/maps?q=' + encodeURIComponent(location) + '" target="_blank" rel="noopener"><i data-lucide="map-pin"></i> view Location</a>';
+    }
+    function escAttr(val) {
+        return String(val || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    var completionValue = '';
+    if (tender.estimated_completion_date) {
+        var d = new Date(tender.estimated_completion_date);
+        if (!isNaN(d.getTime())) {
+            completionValue = d.toISOString().slice(0, 10);
+        }
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Estimate Tender #<%= tender.tender_id %></h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Set system cost, completion target, and optional PDF report.</p>
+            </div>
+            <a href="/budget-admin/pending" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;">
+                <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back to pending
+            </a>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Could not save</strong><p>Please fill estimated cost and completion date.</p></div>
+        </div>
+        <% } %>
+
+        <div class="ba-estimate-grid">
+            <section style="background:rgba(15,23,42,0.6);border:1px solid var(--surface-border);border-radius:14px;padding:1.35rem;">
+                <h3 style="margin:0 0 1rem;font-family:'Outfit';color:#38bdf8;">Budget form</h3>
+                <form method="post" action="/budget-admin/estimate/<%= tender.tender_id %>" enctype="multipart/form-data">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:0.85rem;">
+                        <label style="display:flex;flex-direction:column;gap:0.35rem;">
+                            <span style="font-size:0.8rem;color:var(--text-muted);">System estimated cost (₹)</span>
+                            <input type="number" name="estimatedCost" required min="1" placeholder="e.g. 2400000"
+                                   value="<%= tender.estimated_cost || '' %>"
+                                   style="padding:0.75rem 0.85rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.22);color:inherit;font:inherit;">
+                        </label>
+                        <label style="display:flex;flex-direction:column;gap:0.35rem;">
+                            <span style="font-size:0.8rem;color:var(--text-muted);">Completion target date</span>
+                            <input type="date" name="completionDate" required value="<%= completionValue %>"
+                                   style="padding:0.75rem 0.85rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.22);color:inherit;font:inherit;">
+                        </label>
+                    </div>
+
+                    <label style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.85rem;">
+                        <span style="font-size:0.8rem;color:var(--text-muted);">Budget notes</span>
+                        <textarea name="budgetNotes" rows="4" placeholder="Material assumptions, contingencies, exclusions…"
+                                  style="padding:0.75rem 0.85rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.22);color:inherit;font:inherit;resize:vertical;"><%= tender.budget_notes || '' %></textarea>
+                    </label>
+
+                    <label style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:1.1rem;">
+                        <span style="font-size:0.8rem;color:var(--text-muted);">Budget report PDF <%= tender.budget_report ? '(optional replace)' : '(optional)' %></span>
+                        <input type="file" name="budgetReport" accept=".pdf,application/pdf"
+                               style="padding:0.7rem;border-radius:10px;border:1px dashed var(--surface-border);background:rgba(255,255,255,0.02);color:inherit;font:inherit;">
+                        <% if (tender.budget_report) { %>
+                        <a href="/budget-admin/view-report?file=<%= encodeURIComponent(tender.budget_report) %>" target="_blank" rel="noopener" style="color:#38bdf8;font-size:0.85rem;text-decoration:none;margin-top:0.25rem;">
+                            Current report: <%= tender.budget_report %>
+                        </a>
+                        <% } %>
+                    </label>
+
+                    <button type="submit" class="btn-primary" style="background:#38bdf8;color:#0f172a;display:inline-flex;align-items:center;gap:0.4rem;">
+                        <i data-lucide="send" style="width:16px;height:16px;"></i>
+                        Submit &amp; mark estimated
+                    </button>
+                </form>
+            </section>
+
+            <section style="background:rgba(15,23,42,0.55);border:1px solid var(--surface-border);border-radius:14px;padding:1.35rem;">
+                <h3 style="margin:0 0 1rem;font-family:'Outfit';color:var(--accent);">Tender brief</h3>
+                <div style="display:grid;gap:0.75rem;">
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">House owner</p>
+                        <strong><%= safe(tender.owner_name) %></strong>
+                        <div style="color:var(--text-muted);font-size:0.85rem;"><%= safe(tender.owner_email) %> · <%= safe(tender.owner_mobile) %></div>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Plot / location</p>
+                        <strong><%= safe(tender.plotArea) %></strong>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">BHK</p>
+                            <strong><%= safe(tender.bhk) %></strong>
+                        </div>
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Floors</p>
+                            <strong><%= safe(tender.floors) %></strong>
+                        </div>
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Soil</p>
+                            <strong><%= safe(tender.soilType) %></strong>
+                        </div>
+                        <div>
+                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Owner budget</p>
+                            <strong><%= money(tender.budget) %></strong>
+                        </div>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Special instructions</p>
+                        <p style="margin:0.25rem 0 0;color:var(--text-muted);font-size:0.9rem;"><%= safe(tender.specialInstructions) %></p>
+                    </div>
+                    <div>
+                        <p style="margin:0 0 0.55rem;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Documents</p>
+                        <div class="ba-doc-list">
+                            <button type="button" class="ba-doc-btn ba-doc-btn-a4"
+                                onclick="window.openTenderA4 && window.openTenderA4(this)"
+                                data-tender-id="<%= escAttr(tender.tender_id) %>"
+                                data-owner-name="<%= escAttr(safe(tender.owner_name)) %>"
+                                data-owner-email="<%= escAttr(safe(tender.owner_email)) %>"
+                                data-owner-mobile="<%= escAttr(safe(tender.owner_mobile)) %>"
+                                data-construction-code="<%= escAttr(safe(tender.constructionCode)) %>"
+                                data-plot-area="<%= escAttr(safe(tender.plotArea)) %>"
+                                data-soil-type="<%= escAttr(safe(tender.soilType)) %>"
+                                data-location="<%= escAttr(safe(tender.plotLocation)) %>"
+                                data-bhk="<%= escAttr(safe(tender.bhk)) %>"
+                                data-floors="<%= escAttr(safe(tender.floors)) %>"
+                                data-budget="<%= escAttr(money(tender.budget)) %>"
+                                data-materials-provided="<%= escAttr(safe(tender.materialsProvided)) %>"
+                                data-finalized-plan="<%= escAttr(safe(tender.finalizedPlan)) %>"
+                                data-ancillary-requirements="<%= escAttr(safe(tender.ancillary_requirements)) %>"
+                                data-external-works="<%= escAttr(safe(tender.externalWorks)) %>"
+                                data-boundary-wall-type="<%= escAttr(safe(tender.boundaryWallType)) %>"
+                                data-construction-time="<%= escAttr(safe(tender.constructionTime)) %>"
+                                data-special-instructions="<%= escAttr(safe(tender.specialInstructions)) %>"
+                                data-architectural-plan="<%= escAttr(tender.architectural_plan) %>"
+                                data-plot-documents="<%= escAttr(tender.Plot_documents) %>"
+                                data-house-owner-digital-signature="<%= escAttr(tender.house_owner_digital_signature) %>"
+                                data-payment-status="<%= escAttr(safe(tender.payment_status)) %>"
+                                data-payment-amount="<%= escAttr(money(tender.payment_amount)) %>"
+                                data-created-at="<%= escAttr(tender.created_at ? new Date(tender.created_at).toLocaleString('en-IN') : '') %>">
+                                <i data-lucide="eye"></i> View A4
+                            </button>
+                            <%- viewDoc(tender.architectural_plan, 'architectural_plan') %>
+                            <%- viewDoc(tender.Plot_documents, 'Plot_documents') %>
+                            <%- viewDoc(tender.house_owner_digital_signature, 'signature') %>
+                            <%- viewLocation(tender.plotLocation) %>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<style>
+.ba-estimate-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+.ba-doc-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.ba-doc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 34px;
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(56,189,248,0.35);
+    background: rgba(56,189,248,0.10);
+    color: #7dd3fc;
+    text-decoration: none;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ba-doc-btn i { width: 14px; height: 14px; }
+.ba-doc-btn:hover {
+    background: rgba(56,189,248,0.18);
+    color: #e0f2fe;
+}
+.ba-doc-btn-a4 {
+    background: rgba(167,139,250,0.12);
+    border-color: rgba(167,139,250,0.4);
+    color: #c4b5fd;
+}
+.ba-doc-btn-a4:hover {
+    background: rgba(167,139,250,0.2);
+    color: #ede9fe;
+}
+.ba-doc-btn-off {
+    background: rgba(255,255,255,0.03);
+    border-color: var(--surface-border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+@media (max-width: 900px) {
+    .ba-estimate-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+<script>
+    window.openTenderA4 = function (btn) {
+        if (!btn || !btn.dataset) return;
+        var d = btn.dataset;
+
+        var w = window.open('about:blank', 'TenderA4_' + (d.tenderId || ''), 'width=980,height=720');
+        if (!w) {
+            alert('Pop-up blocked. Please allow pop-ups to view the A4 tender page.');
+            return;
+        }
+
+        function fileHref(name) {
+            var n = String(name || '').trim();
+            if (!n || n === '—') return '';
+            return '/tenders/' + encodeURIComponent(n);
+        }
+        function docButton(file, label) {
+            var href = fileHref(file);
+            if (!href) {
+                return '<span class="btn off">' + label + '</span>';
+            }
+            return '<a class="btn" href="' + href + '" target="_blank" rel="noopener" title="' + label + '">' + label + '</a>';
+        }
+        function locButton(loc) {
+            var n = String(loc || '').trim();
+            if (!n || n === '—') return '<span class="btn off">view Location</span>';
+            return '<a class="btn" href="https://www.google.com/maps?q=' + encodeURIComponent(n) + '" target="_blank" rel="noopener">view Location</a>';
+        }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8" />';
+        html += '<title>Tender A4</title>';
+        html += '<style>';
+        html += '@page{size:A4;margin:18mm;}';
+        html += 'body{font-family:Arial,sans-serif;color:#111;}';
+        html += '.h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}';
+        html += '.t{font-size:18px;font-weight:700;margin:0;}';
+        html += '.sub{color:#555;font-size:13px;margin:4px 0 0;}';
+        html += '.sec{margin-top:16px;}';
+        html += '.sec-title{font-weight:700;color:#444;font-size:13px;margin:0 0 8px;}';
+        html += '.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}';
+        html += '.card{border:1px solid #ddd;border-radius:10px;padding:10px;}';
+        html += '.k{color:#666;font-size:12px;margin-bottom:4px;}';
+        html += '.v{font-size:13px;word-break:break-word;}';
+        html += 'table{width:100%;border-collapse:collapse;}';
+        html += 'th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top;}';
+        html += 'th{background:#f3f4f6;font-size:12px;}';
+        html += '.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}';
+        html += '.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;text-decoration:none;font-size:13px;font-weight:600;cursor:pointer;}';
+        html += '.btn.off{background:#f3f4f6;border-color:#ddd;color:#9ca3af;cursor:not-allowed;}';
+        html += '.btn.print{background:#111;color:#fff;border-color:#111;}';
+        html += '@media print{.btns{display:none;}}';
+        html += '</style></head><body>';
+
+        html += '<div class="h">';
+        html += '<div><p class="t">BuildTender — Tender #' + (d.tenderId || '') + '</p>';
+        html += '<p class="sub">Owner + Tender Information · ' + new Date().toLocaleString('en-IN') + '</p></div>';
+        html += '<div style="color:#666;font-size:12px;">A4 View</div>';
+        html += '</div>';
+
+        html += '<div class="sec"><div class="sec-title">Owner</div>';
+        html += '<table><tbody>';
+        html += '<tr><th style="width:30%;">Name</th><td>' + (d.ownerName || '—') + '</td></tr>';
+        html += '<tr><th>Email</th><td>' + (d.ownerEmail || '—') + '</td></tr>';
+        html += '<tr><th>Mobile</th><td>' + (d.ownerMobile || '—') + '</td></tr>';
+        html += '</tbody></table></div>';
+
+        html += '<div class="sec"><div class="sec-title">Tender Details</div>';
+        html += '<div class="grid">';
+        html += '<div class="card"><div class="k">Construction Code</div><div class="v">' + (d.constructionCode || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Plot Area</div><div class="v">' + (d.plotArea || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Soil Type</div><div class="v">' + (d.soilType || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Location</div><div class="v">' + (d.location || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">BHK / Floors</div><div class="v">' + (d.bhk || '—') + ' · ' + (d.floors || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Owner Budget</div><div class="v">' + (d.budget || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div class="sec"><div class="sec-title">Materials & Plan</div>';
+        html += '<div class="grid">';
+        html += '<div class="card"><div class="k">Materials Provided</div><div class="v">' + (d.materialsProvided || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Finalized Plan</div><div class="v">' + (d.finalizedPlan || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Construction Time</div><div class="v">' + (d.constructionTime || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Submitted</div><div class="v">' + (d.createdAt || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div class="sec"><div class="sec-title">Requirements & Instructions</div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">Ancillary Requirements</div><div class="v">' + (d.ancillaryRequirements || '—') + '</div></div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">External Works</div><div class="v">' + (d.externalWorks || '—') + '</div></div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">Boundary Wall Type</div><div class="v">' + (d.boundaryWallType || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Special Instructions</div><div class="v">' + (d.specialInstructions || '—') + '</div></div>';
+        html += '</div>';
+
+        html += '<div class="sec"><div class="sec-title">Documents</div>';
+        html += '<div class="btns">';
+        html += docButton(d.architecturalPlan, 'architectural_plan');
+        html += docButton(d.plotDocuments, 'Plot_documents');
+        html += docButton(d.houseOwnerDigitalSignature, 'signature');
+        html += locButton(d.location);
+        html += '<button class="btn print" onclick="window.print()">Print</button>';
+        html += '</div></div>';
+
+        html += '</body></html>';
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+    };
+</script>

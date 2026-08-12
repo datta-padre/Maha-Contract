@@ -1,0 +1,109 @@
+<%- include('../partials/header') %>
+<%
+    var stats = (typeof stats !== 'undefined' && stats) ? stats : { pending: 0, estimated: 0, paid: 0, feesCollected: 0 };
+    var pending = (typeof pendingTenders !== 'undefined' && Array.isArray(pendingTenders)) ? pendingTenders : [];
+    var estimated = (typeof estimatedTenders !== 'undefined' && Array.isArray(estimatedTenders)) ? estimatedTenders : [];
+
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Budget Estimator Desk</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Estimate base costs, assign completion dates, and forward reports for tender publishing.</p>
+            </div>
+            <a href="/budget-admin/pending" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;">
+                <i data-lucide="clock" style="width:16px;height:16px;"></i> Open pending queue
+            </a>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="dashboard-grid" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <i data-lucide="clock" style="color:#38bdf8;"></i>
+                <h3><%= stats.pending || 0 %></h3>
+                <p>Pending Estimations</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="check-circle" style="color:#22c55e;"></i>
+                <h3><%= stats.estimated || 0 %></h3>
+                <p>Completed Budgets</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="wallet" style="color:#eab308;"></i>
+                <h3><%= stats.paid || 0 %></h3>
+                <p>Paid Tenders</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="banknote" style="color:#a78bfa;"></i>
+                <h3><%= money(stats.feesCollected) %></h3>
+                <p>Fees Collected</p>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem;">
+            <section style="background:rgba(15,23,42,0.55);border:1px solid var(--surface-border);border-radius:14px;padding:1.25rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <h3 style="margin:0;font-family:'Outfit';color:#38bdf8;">Pending queue</h3>
+                    <a href="/budget-admin/pending" style="color:var(--accent);font-size:0.85rem;text-decoration:none;">View all</a>
+                </div>
+                <% if (!pending.length) { %>
+                <p style="margin:0;color:var(--text-muted);">No tenders waiting for budget estimation.</p>
+                <% } else { %>
+                <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                    <% pending.forEach(function (t) { %>
+                    <a href="/budget-admin/estimate/<%= t.tender_id %>" style="display:block;text-decoration:none;color:inherit;padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.18);">
+                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                        <div style="margin-top:0.3rem;color:var(--text-muted);font-size:0.85rem;">
+                            <%= safe(t.plotArea) %> · Owner budget <%= money(t.budget) %>
+                        </div>
+                    </a>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+
+            <section style="background:rgba(15,23,42,0.55);border:1px solid var(--surface-border);border-radius:14px;padding:1.25rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <h3 style="margin:0;font-family:'Outfit';color:#22c55e;">Recently estimated</h3>
+                    <a href="/budget-admin/completed" style="color:var(--accent);font-size:0.85rem;text-decoration:none;">View all</a>
+                </div>
+                <% if (!estimated.length) { %>
+                <p style="margin:0;color:var(--text-muted);">Completed estimates will appear here.</p>
+                <% } else { %>
+                <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                    <% estimated.forEach(function (t) { %>
+                    <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.18);">
+                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                        <div style="margin-top:0.3rem;color:var(--text-muted);font-size:0.85rem;">
+                            Est. <%= money(t.estimated_cost) %> · Target <%= t.estimated_completion_date ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN') : '—' %>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

@@ -1,0 +1,367 @@
+<%- include('../partials/header') %>
+<%
+    var pending = (typeof pendingTenders !== 'undefined' && Array.isArray(pendingTenders)) ? pendingTenders : [];
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function escAttr(val) {
+        return String(val || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function payBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
+        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
+        return { color: '#eab308', label: 'Pending' };
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Pending Budget</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Estimate base costs, set completion targets, and compile PDF reports.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Queue</span>
+                <strong><%= pending.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <% if (!pending.length) { %>
+        <section class="ba-empty">
+            <div class="ba-empty-glow" aria-hidden="true"></div>
+            <div class="ba-empty-icon">
+                <i data-lucide="check-circle-2"></i>
+            </div>
+            <p class="ba-empty-kicker">Estimator desk</p>
+            <h3>Budget queue is clear</h3>
+            <p class="ba-empty-copy">No house-owner tenders are waiting for estimation. New paid submissions will appear here automatically.</p>
+            <div class="ba-empty-meta">
+                <span><i data-lucide="inbox"></i> Queue 0</span>
+                <span><i data-lucide="shield-check"></i> Desk ready</span>
+                <span><i data-lucide="timer"></i> Waiting for tenders</span>
+            </div>
+            <div class="ba-empty-actions">
+                <a href="/budget-admin/completed" class="ba-empty-btn ba-empty-btn-primary">
+                    <i data-lucide="check-circle"></i> View completed
+                </a>
+                <a href="/budget-admin" class="ba-empty-btn">
+                    <i data-lucide="layout-dashboard"></i> Back to overview
+                </a>
+            </div>
+        </section>
+        <% } else { %>
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+            <% pending.forEach(function (t) {
+                var pay = payBadge(t.payment_status);
+                var submitted = t.created_at ? new Date(t.created_at).toLocaleString('en-IN') : '—';
+            %>
+            <div style="background:rgba(15,23,42,0.6);border:1px solid var(--surface-border);border-radius:12px;padding:1.25rem 1.5rem;">
+                <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                    <div>
+                        <h3 style="margin:0 0 0.4rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                            Tender #<%= t.tender_id %>
+                            <span style="font-size:0.75rem;background:rgba(234,179,8,0.12);color:#eab308;padding:0.2rem 0.55rem;border-radius:999px;">Action required</span>
+                        </h3>
+                        <p style="margin:0;color:var(--text-muted);font-size:0.92rem;">
+                            Owner: <strong style="color:#fff;"><%= safe(t.owner_name) %></strong>
+                            &nbsp;·&nbsp; <%= safe(t.owner_email) %>
+                            &nbsp;·&nbsp; <%= safe(t.owner_mobile) %>
+                        </p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="margin:0 0 0.25rem;font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;">Fee payment</p>
+                        <strong style="color:<%= pay.color %>;"><%= pay.label %></strong>
+                        <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.2rem;"><%= money(t.payment_amount) %></div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--surface-border);">
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Plot area</p>
+                        <strong><%= safe(t.plotArea) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">BHK / Floors</p>
+                        <strong><%= safe(t.bhk) %> · <%= safe(t.floors) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Owner budget</p>
+                        <strong><%= money(t.budget) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Soil / Code</p>
+                        <strong><%= safe(t.soilType) %> · <%= safe(t.constructionCode) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Location</p>
+                        <strong style="word-break:break-word;"><%= safe(t.plotLocation) %></strong>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Submitted</p>
+                        <strong><%= submitted %></strong>
+                    </div>
+                </div>
+
+                <div style="margin-top:1rem;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
+                    <button type="button"
+                        onclick="window.openTenderA4 && window.openTenderA4(this)"
+                        style="padding:0.45rem 0.75rem;border-radius:8px;border:1px solid var(--surface-border);background:rgba(255,255,255,0.03);color:inherit;font:inherit;font-size:0.82rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;"
+                        data-tender-id="<%= escAttr(t.tender_id) %>"
+                        data-owner-name="<%= escAttr(safe(t.owner_name)) %>"
+                        data-owner-email="<%= escAttr(safe(t.owner_email)) %>"
+                        data-owner-mobile="<%= escAttr(safe(t.owner_mobile)) %>"
+                        data-construction-code="<%= escAttr(safe(t.constructionCode)) %>"
+                        data-plot-area="<%= escAttr(safe(t.plotArea)) %>"
+                        data-soil-type="<%= escAttr(safe(t.soilType)) %>"
+                        data-location="<%= escAttr(safe(t.plotLocation)) %>"
+                        data-bhk="<%= escAttr(safe(t.bhk)) %>"
+                        data-floors="<%= escAttr(safe(t.floors)) %>"
+                        data-budget="<%= escAttr(money(t.budget)) %>"
+                        data-materials-provided="<%= escAttr(safe(t.materialsProvided)) %>"
+                        data-finalized-plan="<%= escAttr(safe(t.finalizedPlan)) %>"
+                        data-ancillary-requirements="<%= escAttr(safe(t.ancillary_requirements)) %>"
+                        data-external-works="<%= escAttr(safe(t.externalWorks)) %>"
+                        data-boundary-wall-type="<%= escAttr(safe(t.boundaryWallType)) %>"
+                        data-construction-time="<%= escAttr(safe(t.constructionTime)) %>"
+                        data-special-instructions="<%= escAttr(safe(t.specialInstructions)) %>"
+                        data-architectural-plan="<%= escAttr(safe(t.architectural_plan)) %>"
+                        data-plot-documents="<%= escAttr(safe(t.Plot_documents)) %>"
+                        data-house-owner-digital-signature="<%= escAttr(safe(t.house_owner_digital_signature)) %>"
+                        data-payment-status="<%= escAttr(safe(t.payment_status)) %>"
+                        data-payment-amount="<%= escAttr(money(t.payment_amount)) %>"
+                        data-payment-transaction-id="<%= escAttr(safe(t.payment_transaction_id)) %>"
+                        data-razorpay-order-id="<%= escAttr(safe(t.razorpay_order_id)) %>"
+                        data-created-at="<%= escAttr(submitted) %>">
+                        <i data-lucide="eye" style="width:14px;height:14px;"></i> View
+                    </button>
+                    <a href="/budget-admin/estimate/<%= t.tender_id %>" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;background:#38bdf8;color:#0f172a;">
+                        <i data-lucide="calculator" style="width:16px;height:16px;"></i> Estimate budget
+                    </a>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+<style>
+.ba-empty {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3.25rem 2rem;
+    border-radius: 18px;
+    border: 1px solid rgba(56,189,248,0.18);
+    background:
+        radial-gradient(circle at top, rgba(34,197,94,0.12), transparent 42%),
+        rgba(15,23,42,0.62);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+}
+.ba-empty-glow {
+    position: absolute;
+    inset: auto -20% -40% auto;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(56,189,248,0.16), transparent 70%);
+    pointer-events: none;
+}
+.ba-empty-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.15rem;
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.28);
+    color: #4ade80;
+    box-shadow: 0 0 0 8px rgba(34,197,94,0.06);
+}
+.ba-empty-icon i { width: 34px; height: 34px; }
+.ba-empty-kicker {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #38bdf8;
+}
+.ba-empty h3 {
+    margin: 0 0 0.55rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.65rem;
+    color: #fff;
+}
+.ba-empty-copy {
+    max-width: 460px;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+.ba-empty-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.55rem;
+    margin: 1.35rem 0 1.5rem;
+}
+.ba-empty-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: rgba(2,6,23,0.35);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.ba-empty-meta i { width: 14px; height: 14px; color: #38bdf8; }
+.ba-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem;
+}
+.ba-empty-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 40px;
+    padding: 0 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    background: rgba(255,255,255,0.04);
+    color: #e2e8f0;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.ba-empty-btn i { width: 16px; height: 16px; }
+.ba-empty-btn:hover { background: rgba(255,255,255,0.08); }
+.ba-empty-btn-primary {
+    background: #38bdf8;
+    border-color: #38bdf8;
+    color: #0f172a;
+}
+.ba-empty-btn-primary:hover { background: #7dd3fc; }
+</style>
+<script>
+    window.openTenderA4 = function (btn) {
+        if (!btn || !btn.dataset) return;
+        var d = btn.dataset;
+
+        var w = window.open('about:blank', 'TenderA4_' + (d.tenderId || ''), 'width=980,height=720');
+        if (!w) {
+            alert('Pop-up blocked. Please allow pop-ups to view the A4 tender page.');
+            return;
+        }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8" />';
+        html += '<title>Tender A4</title>';
+        html += '<style>';
+        html += '@page{size:A4;margin:18mm;}';
+        html += 'body{font-family:Arial,sans-serif;color:#111;}';
+        html += '.h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}';
+        html += '.t{font-size:18px;font-weight:700;margin:0;}';
+        html += '.sub{color:#555;font-size:13px;margin:4px 0 0;}';
+        html += '.sec{margin-top:16px;}';
+        html += '.sec-title{font-weight:700;color:#444;font-size:13px;margin:0 0 8px;}';
+        html += '.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}';
+        html += '.card{border:1px solid #ddd;border-radius:10px;padding:10px;}';
+        html += '.k{color:#666;font-size:12px;margin-bottom:4px;}';
+        html += '.v{font-size:13px;word-break:break-word;}';
+        html += 'table{width:100%;border-collapse:collapse;}';
+        html += 'th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top;}';
+        html += 'th{background:#f3f4f6;font-size:12px;}';
+        html += '</style></head><body>';
+
+        html += '<div class="h">';
+        html += '<div><p class="t">BuildTender — Tender #' + (d.tenderId || '') + '</p>';
+        html += '<p class="sub">Owner + Tender Information · ' + new Date().toLocaleString('en-IN') + '</p></div>';
+        html += '<div style="color:#666;font-size:12px;">A4 View</div>';
+        html += '</div>';
+
+        html += '<div class="sec"><div class="sec-title">Owner</div>';
+        html += '<table><tbody>';
+        html += '<tr><th style="width:30%;">Name</th><td>' + (d.ownerName || '—') + '</td></tr>';
+        html += '<tr><th>Email</th><td>' + (d.ownerEmail || '—') + '</td></tr>';
+        html += '<tr><th>Mobile</th><td>' + (d.ownerMobile || '—') + '</td></tr>';
+        html += '</tbody></table></div>';
+
+        html += '<div class="sec"><div class="sec-title">Tender Details</div>';
+        html += '<div class="grid">';
+        html += '<div class="card"><div class="k">Construction Code</div><div class="v">' + (d.constructionCode || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Plot Area</div><div class="v">' + (d.plotArea || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Soil Type</div><div class="v">' + (d.soilType || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Location</div><div class="v">' + (d.location || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">BHK / Floors</div><div class="v">' + (d.bhk || '—') + ' · ' + (d.floors || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Owner Budget</div><div class="v">' + (d.budget || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div class="sec"><div class="sec-title">Materials & Plan</div>';
+        html += '<div class="grid">';
+        html += '<div class="card"><div class="k">Materials Provided</div><div class="v">' + (d.materialsProvided || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Finalized Plan</div><div class="v">' + (d.finalizedPlan || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Construction Time</div><div class="v">' + (d.constructionTime || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Submitted</div><div class="v">' + (d.createdAt || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div class="sec"><div class="sec-title">Requirements & Instructions</div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">Ancillary Requirements</div><div class="v">' + (d.ancillaryRequirements || '—') + '</div></div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">External Works</div><div class="v">' + (d.externalWorks || '—') + '</div></div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">Boundary Wall Type</div><div class="v">' + (d.boundaryWallType || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Special Instructions</div><div class="v">' + (d.specialInstructions || '—') + '</div></div>';
+        html += '</div>';
+
+        html += '<div class="sec"><div class="sec-title">Documents & Payment</div>';
+        html += '<div class="grid">';
+        html += '<div class="card"><div class="k">Architectural Plan</div><div class="v">' + (d.architecturalPlan || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Plot Documents</div><div class="v">' + (d.plotDocuments || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Digital Signature</div><div class="v">' + (d.houseOwnerDigitalSignature || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Payment</div><div class="v">' + (d.paymentStatus || '—') + ' · ' + (d.paymentAmount || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;gap:10px;">';
+        html += '<button onclick="window.print()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#111;color:#fff;cursor:pointer;">Print</button>';
+        html += '<button onclick="window.close()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#111;cursor:pointer;">Close</button>';
+        html += '</div>';
+
+        html += '</body></html>';
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+    };
+</script>

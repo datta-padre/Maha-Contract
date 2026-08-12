@@ -1,0 +1,102 @@
+<%- include('../partials/header') %>
+<%
+    var estimated = (typeof estimatedTenders !== 'undefined' && Array.isArray(estimatedTenders)) ? estimatedTenders : [];
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Completed Budget</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Review finalized estimates. Reopen any tender to edit the budget again.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Done</span>
+                <strong><%= estimated.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof notice !== 'undefined' && notice === 'saved') { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
+            <i data-lucide="check-circle"></i>
+            <div><strong>Budget saved</strong><p>Estimate forwarded to the completed queue.</p></div>
+        </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <% if (!estimated.length) { %>
+        <div class="empty-state">
+            <i data-lucide="database" style="width:48px;height:48px;margin-bottom:1rem;color:var(--surface-border);"></i>
+            <h3>No completed estimations yet</h3>
+            <p>Finished budget reports will show up here.</p>
+        </div>
+        <% } else { %>
+        <div style="overflow-x:auto;border:1px solid var(--surface-border);border-radius:12px;background:rgba(15,23,42,0.45);">
+            <table style="width:100%;border-collapse:collapse;min-width:860px;">
+                <thead>
+                    <tr style="text-align:left;color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;">
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Tender</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Owner</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Owner budget</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Estimated cost</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Target date</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Report</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% estimated.forEach(function (t) { %>
+                    <tr>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">#<%= t.tender_id %></td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
+                            <strong><%= safe(t.owner_name) %></strong>
+                            <div style="font-size:0.8rem;color:var(--text-muted);"><%= safe(t.owner_email) %></div>
+                        </td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);"><%= money(t.budget) %></td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);color:#22c55e;font-weight:600;"><%= money(t.estimated_cost) %></td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
+                            <%= t.estimated_completion_date ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN') : '—' %>
+                        </td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
+                            <% if (t.budget_report) { %>
+                            <a href="/budget-admin/view-report?file=<%= encodeURIComponent(t.budget_report) %>" target="_blank" rel="noopener" style="color:#38bdf8;text-decoration:none;">Open PDF</a>
+                            <% } else { %>
+                            —
+                            <% } %>
+                        </td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
+                            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                <a href="/budget-admin/estimate/<%= t.tender_id %>" style="padding:0.35rem 0.65rem;border-radius:8px;border:1px solid var(--surface-border);color:inherit;text-decoration:none;font-size:0.8rem;">Edit</a>
+                                <form method="post" action="/budget-admin/reopen/<%= t.tender_id %>" style="margin:0;">
+                                    <button type="submit" style="padding:0.35rem 0.65rem;border-radius:8px;border:1px solid rgba(234,179,8,0.35);background:transparent;color:#eab308;font:inherit;font-size:0.8rem;cursor:pointer;">Reopen</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

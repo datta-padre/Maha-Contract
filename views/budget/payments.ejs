@@ -1,0 +1,108 @@
+<%- include('../partials/header') %>
+<%
+    var tenders = (typeof tenders !== 'undefined' && Array.isArray(tenders)) ? tenders : [];
+    var stats = (typeof stats !== 'undefined' && stats) ? stats : { paid: 0, feesCollected: 0 };
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function payBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
+        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
+        return { color: '#eab308', label: 'Pending' };
+    }
+    function paymentDate(t) {
+        if (t.payment_date) return new Date(t.payment_date).toLocaleString('en-IN');
+        if (t.created_at) return new Date(t.created_at).toLocaleString('en-IN');
+        return '—';
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>House Owner Payments</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Blueprint / tender platform fees mapped from house-owner submissions.</p>
+            </div>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="dashboard-grid" style="margin-bottom: 1.5rem;">
+            <div class="stat-card">
+                <i data-lucide="wallet" style="color:#eab308;"></i>
+                <h3><%= stats.paid || 0 %></h3>
+                <p>Paid tenders</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="banknote" style="color:#22c55e;"></i>
+                <h3><%= money(stats.feesCollected) %></h3>
+                <p>Fees collected</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="file-text"></i>
+                <h3><%= tenders.length %></h3>
+                <p>All tenders</p>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto;border:1px solid var(--surface-border);border-radius:12px;background:rgba(15,23,42,0.45);">
+            <table style="width:100%;border-collapse:collapse;min-width:820px;">
+                <thead>
+                    <tr style="text-align:left;color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;">
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Owner</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Tender ID</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Platform fee</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Payment status</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Txn / Order</th>
+                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (!tenders.length) { %>
+                    <tr>
+                        <td colspan="6" style="padding:1.5rem;text-align:center;color:var(--text-muted);">No tenders logged yet.</td>
+                    </tr>
+                    <% } else { %>
+                    <% tenders.forEach(function (t) {
+                        var pay = payBadge(t.payment_status);
+                    %>
+                    <tr>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
+                            <strong><%= safe(t.owner_name) %></strong>
+                            <div style="font-size:0.8rem;color:var(--text-muted);"><%= safe(t.owner_email) %></div>
+                        </td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">#<%= t.tender_id %></td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);"><%= money(t.payment_amount) %></td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);color:<%= pay.color %>;font-weight:600;"><%= pay.label %></td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);font-size:0.85rem;color:var(--text-muted);">
+                            <%= safe(t.payment_transaction_id) %><br><%= safe(t.razorpay_order_id) %>
+                        </td>
+                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
+                            <%= paymentDate(t) %>
+                        </td>
+                    </tr>
+                    <% }) %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

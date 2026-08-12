@@ -1,0 +1,27 @@
+<%
+    var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
+%>
+<aside class="sidebar">
+    <div class="logo sidebar-logo">
+        <i data-lucide="calculator" class="logo-icon"></i>
+        <span style="color:#38bdf8;">Budget</span>Admin
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/budget-admin" class="<%= page === 'overview' ? 'active' : '' %>">
+            <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+        <a href="/budget-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
+            <i data-lucide="clock"></i> Pending Budget
+        </a>
+        <a href="/budget-admin/completed" class="<%= page === 'completed' ? 'active' : '' %>">
+            <i data-lucide="check-circle"></i> Completed Budget
+        </a>
+        <a href="/budget-admin/payments" class="<%= page === 'payments' ? 'active' : '' %>">
+            <i data-lucide="wallet"></i> Payments
+        </a>
+        <a href="/budget-admin/profile" class="<%= page === 'profile' ? 'active' : '' %>">
+            <i data-lucide="user"></i> Profile
+        </a>
+        <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+    </nav>
+</aside>
