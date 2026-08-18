@@ -111,7 +111,7 @@ CREATE TABLE contractor_kyc(
         staff_email VARCHAR(255) ,
         staff_mobile VARCHAR(15) ,
         staff_password VARCHAR(255),
-        staff_role ENUM('VerifyAdmin','BudgetAdmin','MaterialsAdmin','TenderAdmin') NOT NULL,
+        staff_role ENUM('VerifyAdmin','BudgetAdmin','MasterAdmin','TenderAdmin') NOT NULL,
         staff_status ENUM('active', 'inactive') DEFAULT 'active',
         staff_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         staff_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
