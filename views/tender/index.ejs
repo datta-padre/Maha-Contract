@@ -1,0 +1,203 @@
+<%- include('../partials/header') %>
+<%
+    var stats = (typeof stats !== 'undefined' && stats) ? stats : { ready: 0, published: 0, assigned: 0, approvedBudgets: 0 };
+    var ready = (typeof readyTenders !== 'undefined' && Array.isArray(readyTenders)) ? readyTenders : [];
+    var published = (typeof publishedTenders !== 'undefined' && Array.isArray(publishedTenders)) ? publishedTenders : [];
+    var assigned = (typeof assignedTenders !== 'undefined' && Array.isArray(assignedTenders)) ? assignedTenders : [];
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar', { activePage: typeof activePage !== 'undefined' ? activePage : 'overview' }) %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Tender Admin Desk</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Verify approved budgets, publish tenders live, and assign contractors.</p>
+            </div>
+            <a href="/tender-admin/pending" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.45rem;background:#a855f7;">
+                <i data-lucide="clock" style="width:16px;height:16px;"></i> Open pending
+            </a>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="ta-stats">
+            <article class="stat-card ta-stat">
+                <i data-lucide="clock" style="color:#38bdf8;"></i>
+                <h3><%= stats.ready || 0 %></h3>
+                <p>Pending publish</p>
+            </article>
+            <article class="stat-card ta-stat">
+                <i data-lucide="radio" style="color:#a855f7;"></i>
+                <h3><%= stats.published || 0 %></h3>
+                <p>Live tenders</p>
+            </article>
+            <article class="stat-card ta-stat">
+                <i data-lucide="handshake" style="color:#22c55e;"></i>
+                <h3><%= stats.assigned || 0 %></h3>
+                <p>Assigned</p>
+            </article>
+            <article class="stat-card ta-stat">
+                <i data-lucide="badge-check" style="color:#eab308;"></i>
+                <h3><%= stats.approvedBudgets || 0 %></h3>
+                <p>Approved budgets</p>
+            </article>
+        </div>
+
+        <div class="ta-panels">
+            <section class="ta-panel">
+                <div class="ta-panel-head">
+                    <h3><i data-lucide="clock"></i> Pending queue</h3>
+                    <a href="/tender-admin/pending">View all</a>
+                </div>
+                <% if (!ready.length) { %>
+                <p class="ta-empty-line">No approved budgets waiting to publish.</p>
+                <% } else { %>
+                <div class="ta-list">
+                    <% ready.forEach(function (t) { %>
+                    <a class="ta-list-item" href="/tender-admin/pending">
+                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                        <span>Est. <%= money(t.estimated_cost) %> · <%= safe(t.constructionCode) %></span>
+                    </a>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="ta-panel">
+                <div class="ta-panel-head">
+                    <h3><i data-lucide="radio"></i> Live published</h3>
+                    <a href="/tender-admin/publish">View all</a>
+                </div>
+                <% if (!published.length) { %>
+                <p class="ta-empty-line">No tenders live in the marketplace yet.</p>
+                <% } else { %>
+                <div class="ta-list">
+                    <% published.forEach(function (t) { %>
+                    <div class="ta-list-item is-static">
+                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                        <span>Live · Est. <%= money(t.estimated_cost) %></span>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="ta-panel">
+                <div class="ta-panel-head">
+                    <h3><i data-lucide="handshake"></i> Recently assigned</h3>
+                    <a href="/tender-admin/assigned">View all</a>
+                </div>
+                <% if (!assigned.length) { %>
+                <p class="ta-empty-line">No contracts assigned yet.</p>
+                <% } else { %>
+                <div class="ta-list">
+                    <% assigned.forEach(function (t) { %>
+                    <div class="ta-list-item is-static">
+                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                        <span>Contractor: <%= safe(t.contractor_name) %></span>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+        </div>
+    </main>
+</div>
+
+<style>
+.ta-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.35rem;
+}
+.ta-stat { margin: 0; }
+.ta-panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.15rem;
+}
+.ta-panel {
+    background: rgba(15,23,42,0.55);
+    border: 1px solid var(--surface-border);
+    border-radius: 16px;
+    padding: 1.15rem 1.2rem;
+}
+.ta-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.ta-panel-head h3 {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    color: #e2e8f0;
+}
+.ta-panel-head h3 i { width: 16px; height: 16px; color: #c084fc; }
+.ta-panel-head a {
+    color: #c084fc;
+    font-size: 0.82rem;
+    text-decoration: none;
+    font-weight: 600;
+}
+.ta-empty-line {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.ta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+.ta-list-item {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--surface-border);
+    background: rgba(0,0,0,0.18);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ta-list-item:not(.is-static):hover {
+    border-color: rgba(168,85,247,0.4);
+    background: rgba(168,85,247,0.08);
+}
+.ta-list-item strong {
+    display: block;
+    font-size: 0.92rem;
+}
+.ta-list-item span {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+</style>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

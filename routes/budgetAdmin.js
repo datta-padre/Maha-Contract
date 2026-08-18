@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 const exe = require('../config/connection');
+const { ROLES, STAFF_ROLES, verifyToken, requireRole } = require('../middleware/auth');
 
 const REPORT_DIR = path.join(__dirname, '..', 'public', 'budget-reports');
 if (!fs.existsSync(REPORT_DIR)) {
@@ -15,7 +16,7 @@ async function ensureBudgetColumns() {
     if (budgetColumnsReady) return;
 
     const cols = [
-        { name: 'budget_status', ddl: "ADD COLUMN budget_status ENUM('pending','estimated') DEFAULT 'pending'" },
+        { name: 'budget_status', ddl: "ADD COLUMN budget_status ENUM('pending','approved','estimated') DEFAULT 'pending'" },
         { name: 'estimated_cost', ddl: 'ADD COLUMN estimated_cost VARCHAR(255)' },
         { name: 'estimated_completion_date', ddl: 'ADD COLUMN estimated_completion_date DATE' },
         { name: 'budget_report', ddl: 'ADD COLUMN budget_report TEXT' },
@@ -32,6 +33,16 @@ async function ensureBudgetColumns() {
         } catch (err) {
             console.error('Budget column ensure failed for', cols[i].name, err.message);
         }
+    }
+
+    // Ensure approved is allowed on existing DBs that only had pending/estimated.
+    try {
+        await exe(
+            `ALTER TABLE tenders
+             MODIFY COLUMN budget_status ENUM('pending','approved','estimated') DEFAULT 'pending'`
+        );
+    } catch (err) {
+        console.error('Budget status ENUM update failed:', err.message);
     }
 
     budgetColumnsReady = true;
@@ -61,6 +72,10 @@ async function fetchTenders(status) {
         sql += ` WHERE COALESCE(t.budget_status, 'pending') = 'pending'`;
     } else if (status === 'estimated') {
         sql += ` WHERE t.budget_status = 'estimated'`;
+    } else if (status === 'approved') {
+        sql += ` WHERE t.budget_status = 'approved'`;
+    } else if (status === 'completed') {
+        sql += ` WHERE t.budget_status IN ('estimated', 'approved')`;
     }
 
     sql += ' ORDER BY t.tender_id DESC';
@@ -75,6 +90,9 @@ async function getStats() {
     const estimatedRows = await exe(
         `SELECT COUNT(*) AS c FROM tenders WHERE budget_status = 'estimated'`
     );
+    const approvedRows = await exe(
+        `SELECT COUNT(*) AS c FROM tenders WHERE budget_status = 'approved'`
+    );
     const paidRows = await exe(
         `SELECT COUNT(*) AS c FROM tenders WHERE payment_status = 'paid'`
     );
@@ -85,10 +103,13 @@ async function getStats() {
     return {
         pending: firstCount(pendingRows),
         estimated: firstCount(estimatedRows),
+        approved: firstCount(approvedRows),
         paid: firstCount(paidRows),
         feesCollected: firstCount(feeRows)
     };
 }
+
+router.use(verifyToken, requireRole(ROLES.ADMIN, STAFF_ROLES.BUDGET));
 
 router.use(async function (req, res, next) {
     try {
@@ -114,7 +135,7 @@ router.get('/', async (req, res) => {
         console.error(err);
         res.render('budget/index', {
             activePage: 'overview',
-            stats: { pending: 0, estimated: 0, paid: 0, feesCollected: 0 },
+            stats: { pending: 0, estimated: 0, approved: 0, paid: 0, feesCollected: 0 },
             pendingTenders: [],
             estimatedTenders: [],
             error: 'Could not load Budget Admin panel.'
@@ -134,7 +155,7 @@ router.get('/pending', async (req, res) => {
 
 router.get('/completed', async (req, res) => {
     try {
-        const estimated = await fetchTenders('estimated');
+        const estimated = await fetchTenders('completed');
         res.render('budget/completed', {
             activePage: 'completed',
             estimatedTenders: estimated,
@@ -161,7 +182,7 @@ router.get('/payments', async (req, res) => {
         res.render('budget/payments', {
             activePage: 'payments',
             tenders: [],
-            stats: { pending: 0, estimated: 0, paid: 0, feesCollected: 0 },
+            stats: { pending: 0, estimated: 0, approved: 0, paid: 0, feesCollected: 0 },
             error: 'Could not load payment overview.'
         });
     }
@@ -269,6 +290,7 @@ router.post('/reopen/:id', async (req, res) => {
         res.redirect('/budget-admin/completed?error=reopen');
     }
 });
+
 
 router.get('/profile', (req, res) => {
     res.render('budget/profile', { activePage: 'profile' });

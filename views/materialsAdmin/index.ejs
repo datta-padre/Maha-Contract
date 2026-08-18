@@ -1,0 +1,53 @@
+<%- include('../partials/header') %>
+<link rel="stylesheet" href="/css/master-admin.css">
+<%
+  // Keep this page functional even before full materials-admin modules are built.
+  // The route only needs an index template to render without crashing.
+%>
+
+<div class="background-animation"></div>
+<div class="dashboard-layout ma-simple">
+  <main class="dashboard-content">
+    <header class="dashboard-header">
+      <div>
+        <h2>Materials Admin Desk</h2>
+        <p style="color: var(--text-muted); margin-top: 0.35rem;">
+          Manage staff and coordinate materials operations.
+        </p>
+      </div>
+    </header>
+
+    <div class="dashboard-grid" style="margin-bottom: 1.5rem;">
+      <div class="stat-card">
+        <i data-lucide="user-check"></i>
+        <h3>Staff</h3>
+        <p>Hire / manage Materials staff</p>
+      </div>
+
+      <div class="stat-card">
+        <i data-lucide="box"></i>
+        <h3>Materials</h3>
+        <p>Track vendor/material activity</p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+      <a
+        href="/master-admin/staff-management/hire-employee"
+        class="btn-primary"
+        style="text-decoration:none;display:inline-flex;align-items:center;gap:0.45rem;"
+      >
+        <i data-lucide="plus"></i> Hire / Manage Staff
+      </a>
+      <a href="/logout" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.45rem;">
+        <i data-lucide="log-out"></i> Logout
+      </a>
+    </div>
+  </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  if (window.lucide) lucide.createIcons();
+</script>
+

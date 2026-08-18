@@ -3,7 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 const exe = require('../config/connection');
-const { ROLES, verifyToken, requireRole } = require('../middleware/auth');
+const { ROLES, STAFF_ROLES, verifyToken, requireRole } = require('../middleware/auth');
+
+router.use(verifyToken, requireRole(ROLES.ADMIN, STAFF_ROLES.VERIFY));
 
 router.get('/', async (req, res) => {
     try {

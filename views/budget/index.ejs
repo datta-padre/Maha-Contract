@@ -1,6 +1,6 @@
 <%- include('../partials/header') %>
 <%
-    var stats = (typeof stats !== 'undefined' && stats) ? stats : { pending: 0, estimated: 0, paid: 0, feesCollected: 0 };
+    var stats = (typeof stats !== 'undefined' && stats) ? stats : { pending: 0, estimated: 0, approved: 0, paid: 0, feesCollected: 0 };
     var pending = (typeof pendingTenders !== 'undefined' && Array.isArray(pendingTenders)) ? pendingTenders : [];
     var estimated = (typeof estimatedTenders !== 'undefined' && Array.isArray(estimatedTenders)) ? estimatedTenders : [];
 
@@ -45,7 +45,12 @@
             <div class="stat-card">
                 <i data-lucide="check-circle" style="color:#22c55e;"></i>
                 <h3><%= stats.estimated || 0 %></h3>
-                <p>Completed Budgets</p>
+                <p>Estimated Budgets</p>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="badge-check" style="color:#4ade80;"></i>
+                <h3><%= stats.approved || 0 %></h3>
+                <p>Approved Budgets</p>
             </div>
             <div class="stat-card">
                 <i data-lucide="wallet" style="color:#eab308;"></i>

@@ -1,0 +1,229 @@
+<%- include('../partials/header') %>
+<%
+    var stats = (typeof stats !== 'undefined' && stats) ? stats : { ready: 0, published: 0, assigned: 0, approvedBudgets: 0 };
+    var ready = (typeof readyTenders !== 'undefined' && Array.isArray(readyTenders)) ? readyTenders : [];
+    var published = (typeof publishedTenders !== 'undefined' && Array.isArray(publishedTenders)) ? publishedTenders : [];
+    var assigned = (typeof assignedTenders !== 'undefined' && Array.isArray(assignedTenders)) ? assignedTenders : [];
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function when(val) {
+        if (!val) return '—';
+        try { return new Date(val).toLocaleString('en-IN'); } catch (e) { return '—'; }
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar', { activePage: typeof activePage !== 'undefined' ? activePage : 'overview' }) %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Tender Overview</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Pending, approved, and assigned tenders in one desk.</p>
+            </div>
+            <a href="/tender-admin/pending" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.45rem;background:#a855f7;">
+                <i data-lucide="clock" style="width:16px;height:16px;"></i> Open pending
+            </a>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="ta-stats">
+            <article class="stat-card ta-stat">
+                <i data-lucide="clock" style="color:#38bdf8;"></i>
+                <h3><%= stats.ready || 0 %></h3>
+                <p>Pending tenders</p>
+            </article>
+            <article class="stat-card ta-stat">
+                <i data-lucide="radio" style="color:#a855f7;"></i>
+                <h3><%= stats.published || 0 %></h3>
+                <p>Approved / live</p>
+            </article>
+            <article class="stat-card ta-stat">
+                <i data-lucide="handshake" style="color:#22c55e;"></i>
+                <h3><%= stats.assigned || 0 %></h3>
+                <p>Assigned</p>
+            </article>
+            <article class="stat-card ta-stat">
+                <i data-lucide="badge-check" style="color:#eab308;"></i>
+                <h3><%= stats.approvedBudgets || 0 %></h3>
+                <p>Approved budgets</p>
+            </article>
+        </div>
+
+        <section class="ta-table-card">
+            <div class="ta-table-head">
+                <h3><i data-lucide="clock"></i> Pending tenders</h3>
+                <a href="/tender-admin/pending">View all</a>
+            </div>
+            <% if (!ready.length) { %>
+            <p class="ta-empty-line">No pending tenders in the publish queue.</p>
+            <% } else { %>
+            <div class="ta-table-wrap">
+                <table class="ta-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Project</th>
+                            <th>Estimated cost</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% ready.forEach(function (t, i) { %>
+                        <tr>
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="ta-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="ta-sub"><%= safe(t.owner_email) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.bhk) %> · <%= safe(t.floors) %> fl</strong>
+                                <div class="ta-sub"><%= safe(t.plotLocation) %></div>
+                            </td>
+                            <td><span class="ta-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><span class="ta-pill is-info"><%= safe(t.budget_status) %></span></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+        </section>
+
+        <section class="ta-table-card">
+            <div class="ta-table-head">
+                <h3><i data-lucide="radio"></i> Approved / live</h3>
+                <a href="/tender-admin/publish">View all</a>
+            </div>
+            <% if (!published.length) { %>
+            <p class="ta-empty-line">No live tenders in the marketplace yet.</p>
+            <% } else { %>
+            <div class="ta-table-wrap">
+                <table class="ta-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Project</th>
+                            <th>Estimated cost</th>
+                            <th>Published</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% published.forEach(function (t, i) { %>
+                        <tr>
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="ta-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="ta-sub"><%= safe(t.owner_email) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.bhk) %> · <%= safe(t.floors) %> fl</strong>
+                                <div class="ta-sub"><%= safe(t.plotLocation) %></div>
+                            </td>
+                            <td><span class="ta-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><%= when(t.published_at || t.created_at) %></td>
+                            <td><span class="ta-pill is-ok"><%= safe(t.tender_status) %></span></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+        </section>
+
+        <section class="ta-table-card">
+            <div class="ta-table-head">
+                <h3><i data-lucide="handshake"></i> Assigned tenders</h3>
+                <a href="/tender-admin/assigned">View all</a>
+            </div>
+            <% if (!assigned.length) { %>
+            <p class="ta-empty-line">No contractors assigned yet.</p>
+            <% } else { %>
+            <div class="ta-table-wrap">
+                <table class="ta-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Contractor</th>
+                            <th>Project</th>
+                            <th>Estimated cost</th>
+                            <th>Assigned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% assigned.forEach(function (t, i) { %>
+                        <tr>
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="ta-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td><strong><%= safe(t.owner_name) %></strong></td>
+                            <td><strong><%= safe(t.contractor_name) %></strong></td>
+                            <td>
+                                <strong><%= safe(t.bhk) %> · <%= safe(t.floors) %> fl</strong>
+                                <div class="ta-sub"><%= safe(t.plotLocation) %></div>
+                            </td>
+                            <td><span class="ta-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><%= when(t.assigned_at) %></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+        </section>
+    </main>
+</div>
+
+<style>
+.ta-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.25rem}
+.ta-stat{margin:0}
+.ta-table-card{background:rgba(15,23,42,.55);border:1px solid var(--surface-border);border-radius:16px;overflow:hidden;margin-bottom:1.15rem}
+.ta-table-head{display:flex;justify-content:space-between;align-items:center;gap:.75rem;padding:1rem 1.15rem;border-bottom:1px solid var(--surface-border);background:rgba(2,6,23,.28)}
+.ta-table-head h3{margin:0;display:inline-flex;align-items:center;gap:.45rem;font-family:'Outfit',sans-serif;font-size:1rem;color:#e2e8f0}
+.ta-table-head h3 i{width:16px;height:16px;color:#c084fc}
+.ta-table-head a{color:#c084fc;font-size:.82rem;text-decoration:none;font-weight:600}
+.ta-empty-line{margin:0;padding:1.1rem 1.15rem;color:var(--text-muted);font-size:.9rem;line-height:1.5}
+.ta-table-wrap{overflow-x:auto}
+.ta-table{width:100%;border-collapse:collapse;min-width:760px}
+.ta-table th,.ta-table td{padding:.85rem .95rem;text-align:left;border-bottom:1px solid var(--surface-border);vertical-align:middle;font-size:.86rem}
+.ta-table thead th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);background:rgba(255,255,255,.03)}
+.ta-table tbody tr:hover td{background:rgba(168,85,247,.06)}
+.ta-sub{margin-top:.18rem;font-size:.78rem;color:var(--text-muted)}
+.ta-cost{color:#4ade80;font-weight:700}
+.ta-pill{display:inline-flex;padding:.22rem .65rem;border-radius:999px;font-size:.74rem;font-weight:700}
+.ta-pill.is-ok{color:#4ade80;background:rgba(34,197,94,.12)}
+.ta-pill.is-info{color:#38bdf8;background:rgba(56,189,248,.12)}
+</style>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

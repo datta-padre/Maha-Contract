@@ -1,0 +1,27 @@
+<%
+    var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
+%>
+<aside class="sidebar">
+    <div class="logo sidebar-logo">
+        <i data-lucide="file-badge" class="logo-icon"></i>
+        <span style="color:#a855f7;">Tender</span>Admin
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/tender-admin" class="<%= page === 'overview' ? 'active' : '' %>">
+            <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+        <a href="/tender-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
+            <i data-lucide="clock"></i> Pending Tenders
+        </a>
+        <a href="/tender-admin/publish" class="<%= page === 'publish' ? 'active' : '' %>">
+            <i data-lucide="radio"></i> Approved
+        </a>
+        <a href="/tender-admin/assigned" class="<%= page === 'assigned' ? 'active' : '' %>">
+            <i data-lucide="handshake"></i> Assigned
+        </a>
+        <a href="/tender-admin/profile" class="<%= page === 'profile' ? 'active' : '' %>">
+            <i data-lucide="user"></i> Profile
+        </a>
+        <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+    </nav>
+</aside>

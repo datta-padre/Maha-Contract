@@ -73,6 +73,7 @@
                         <select name="staffRole" required>
                             <option value="VerifyAdmin" <%= roleKey === 'VerifyAdmin' ? 'selected' : '' %>>Verify Admin</option>
                             <option value="BudgetAdmin" <%= roleKey === 'BudgetAdmin' ? 'selected' : '' %>>Budget Admin</option>
+                            <option value="TenderAdmin" <%= roleKey === 'TenderAdmin' ? 'selected' : '' %>>Tender Admin</option>
                             <option value="MaterialsAdmin" <%= roleKey === 'MaterialsAdmin' ? 'selected' : '' %>>Materials Admin</option>
                         </select>
                     </label>
@@ -98,7 +99,7 @@
                     <label>
                         <span>Current password</span>
                         <div class="sm-password-field">
-                            <input type="text" id="currentPassword" value="<%= member.password || '' %>" readonly placeholder="No passcode set">
+                            <input type="text" id="currentPassword" value="<%= member.hasPassword ? '••••••••' : '' %>" readonly placeholder="No passcode set">
                             <button type="button" class="sm-btn sm-btn-ghost" id="copyPasswordBtn" title="Copy passcode">Copy</button>
                         </div>
                     </label>

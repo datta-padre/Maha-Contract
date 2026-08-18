@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" class="light-theme">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | BuildTender</title>
+  <meta name="description" content="Sign in to your BuildTender account">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="login-page-body">
+  <%
+    var loginEndpoint = (typeof loginEndpoint !== 'undefined' && loginEndpoint) ? loginEndpoint : '/login';
+  %>
+  <%- include('partials/login') %>
+
+  <script>
+    (function () {
+      var loginEndpoint = '<%= loginEndpoint %>';
+      var form = document.getElementById('loginForm');
+      var alertBox = document.getElementById('loginAlert');
+      var alertText = document.getElementById('loginAlertText');
+      var toggleBtn = document.getElementById('togglePass');
+      var passInput = document.getElementById('loginPass');
+      var forgot = document.getElementById('forgotPass');
+
+      function showError(message) {
+        if (!alertBox) return;
+        alertBox.hidden = false;
+        if (alertText) alertText.textContent = message || 'Please check your credentials.';
+      }
+
+      if (toggleBtn && passInput) {
+        toggleBtn.addEventListener('click', function () {
+          var show = passInput.type === 'password';
+          passInput.type = show ? 'text' : 'password';
+          toggleBtn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+          toggleBtn.innerHTML = show ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+          if (window.lucide) lucide.createIcons();
+        });
+      }
+
+      if (forgot) {
+        forgot.addEventListener('click', function (e) {
+          e.preventDefault();
+          alert('Password reset is not available yet. Contact support if you need help.');
+        });
+      }
+
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var email = document.getElementById('loginEmail').value.trim();
+          var password = document.getElementById('loginPass').value;
+          var submitBtn = document.getElementById('loginSubmit');
+
+          if (!email || !password) {
+            showError('Email and password are required.');
+            return;
+          }
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+          }
+
+          fetch(loginEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+          })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+              if (data.success) {
+                window.location.href = data.redirect || '/';
+                return;
+              }
+              showError(data.message || 'Login failed. Please check your credentials.');
+            })
+            .catch(function () {
+              showError('An error occurred. Please try again.');
+            })
+            .finally(function () {
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login Now';
+              }
+            });
+        });
+      }
+
+      if (window.lucide) lucide.createIcons();
+    })();
+  </script>
+</body>
+</html>

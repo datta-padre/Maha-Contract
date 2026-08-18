@@ -1,33 +1,317 @@
 <%- include('../partials/header') %>
+<%
+    var tenders = (typeof tenders !== 'undefined' && Array.isArray(tenders)) ? tenders : [];
+    var kycApproved = (typeof kycApproved !== 'undefined') ? !!kycApproved : false;
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function place(t) {
+        var parts = [t.village, t.taluka, t.district, t.state, t.pincode].filter(function (p) {
+            return p !== undefined && p !== null && String(p).trim() !== '';
+        });
+        if (parts.length) return parts.join(', ');
+        return t.plotLocation || '—';
+    }
+    function yesNo(val) {
+        var s = String(val || '').toLowerCase();
+        if (s === 'yes') return 'Yes';
+        if (s === 'no') return 'No';
+        return safe(val);
+    }
+%>
 <div class="background-animation"></div>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-            <nav class="sidebar-nav">
-                <a href="/contractor/dashboard"><i data-lucide="shield-check"></i> KYC Overview</a>
-                <a href="/contractor/marketplace" class="active"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
-                <a href="/contractor/materials"><i data-lucide="shopping-bag"></i> Buy Material</a>
-                <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
-                <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
-                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+        <nav class="sidebar-nav">
+            <a href="/contractor/dashboard"><i data-lucide="shield-check"></i> KYC Overview</a>
+            <a href="/contractor/marketplace" class="active"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
+            <a href="/contractor/materials"><i data-lucide="shopping-bag"></i> Buy Material</a>
+            <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
+            <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
+            <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+        </nav>
+    </aside>
 
-        <main class="dashboard-content">
-            <header class="dashboard-header">
-                <div>
-                    <h2>Live Tender Marketplace</h2>
-                    <p style="color: var(--text-muted); margin-top: 0.25rem;">Browse System-Approved Tenders. Bid fee is ₹499 per contract.</p>
-                </div>
-            </header>
-
-            <div id="tender-list">
-                <div class="empty-state">
-                    <i data-lucide="search" style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--surface-border);"></i>
-                    <h3>No Tenders Live</h3>
-                    <p>There are currently no active public or private tenders in the system.</p>
-                </div>
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Live Tender Marketplace</h2>
+                <p style="color: var(--text-muted); margin-top: 0.25rem;">System-approved tenders open for bidding. Bid fee is ₹499 per contract.</p>
             </div>
-        </main>
+            <div class="header-highlight">
+                <span>Live</span>
+                <strong><%= tenders.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom:1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <% if (!kycApproved) { %>
+        <div class="alert-banner" style="margin-bottom:1.25rem;border-color:rgba(234,179,8,0.35);background:rgba(234,179,8,0.08);">
+            <i data-lucide="shield-alert"></i>
+            <div>
+                <strong>KYC approval required to bid</strong>
+                <p style="margin:0;color:var(--text-muted);">You can browse live tenders now. Bidding unlocks after document verification.</p>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="mk-stats">
+            <article class="stat-card mk-stat">
+                <i data-lucide="radio" style="color:#eab308;"></i>
+                <h3><%= tenders.length %></h3>
+                <p>Live tenders</p>
+            </article>
+            <article class="stat-card mk-stat">
+                <i data-lucide="banknote" style="color:#4ade80;"></i>
+                <h3>₹499</h3>
+                <p>Bid fee</p>
+            </article>
+            <article class="stat-card mk-stat">
+                <i data-lucide="shield-check" style="color:<%= kycApproved ? '#4ade80' : '#eab308' %>;"></i>
+                <h3><%= kycApproved ? 'Ready' : 'Pending' %></h3>
+                <p>KYC bidding status</p>
+            </article>
+        </div>
+
+        <% if (!tenders.length) { %>
+        <section class="mk-empty">
+            <div class="mk-empty-icon"><i data-lucide="search"></i></div>
+            <p class="mk-kicker">Marketplace</p>
+            <h3>No tenders live</h3>
+            <p>There are currently no published tenders. Check back after Tender Admin publishes a listing.</p>
+        </section>
+        <% } else { %>
+        <div class="mk-toolbar">
+            <div class="mk-search">
+                <i data-lucide="search"></i>
+                <input id="mkSearch" type="search" placeholder="Search location, code, BHK, budget...">
+            </div>
+            <span class="mk-count" id="mkCount"><%= tenders.length %> listings</span>
+        </div>
+
+        <div class="mk-grid" id="mkGrid">
+            <% tenders.forEach(function (t) {
+                var loc = place(t);
+                var hay = [t.tender_id, t.constructionCode, t.bhk, t.floors, t.plotArea, loc, t.estimated_cost, t.budget].join(' ').toLowerCase();
+            %>
+            <article class="mk-card" data-search="<%= hay %>">
+                <div class="mk-card-top">
+                    <span class="mk-pill">Live</span>
+                    <span class="mk-code"><%= safe(t.constructionCode) %></span>
+                </div>
+                <h3>Tender #<%= t.tender_id %></h3>
+                <p class="mk-loc"><i data-lucide="map-pin"></i> <%= loc %></p>
+                <dl class="mk-meta">
+                    <div>
+                        <dt>Project</dt>
+                        <dd><%= safe(t.bhk) %> · <%= safe(t.floors) %> fl</dd>
+                    </div>
+                    <div>
+                        <dt>Plot</dt>
+                        <dd><%= safe(t.plotArea) %></dd>
+                    </div>
+                    <div>
+                        <dt>Timeline</dt>
+                        <dd><%= safe(t.constructionTime) %></dd>
+                    </div>
+                    <div>
+                        <dt>Materials</dt>
+                        <dd><%= yesNo(t.materialsProvided) %></dd>
+                    </div>
+                </dl>
+                <div class="mk-card-foot">
+                    <div>
+                        <span class="mk-cost-label">Estimated cost</span>
+                        <strong class="mk-cost"><%= money(t.estimated_cost || t.budget) %></strong>
+                    </div>
+                    <button type="button" class="mk-btn mk-btn-primary js-mk-open"
+                        data-id="<%= t.tender_id %>"
+                        data-code="<%= safe(t.constructionCode) %>"
+                        data-loc="<%= loc %>"
+                        data-bhk="<%= safe(t.bhk) %>"
+                        data-floors="<%= safe(t.floors) %>"
+                        data-area="<%= safe(t.plotArea) %>"
+                        data-soil="<%= safe(t.soilType) %>"
+                        data-time="<%= safe(t.constructionTime) %>"
+                        data-materials="<%= yesNo(t.materialsProvided) %>"
+                        data-plan="<%= yesNo(t.finalizedPlan) %>"
+                        data-ancillary="<%= safe(t.ancillary_requirements) %>"
+                        data-external="<%= safe(t.externalWorks) %>"
+                        data-wall="<%= safe(t.boundaryWallType) %>"
+                        data-cost="<%= money(t.estimated_cost || t.budget) %>"
+                        data-notes="<%= safe(t.specialInstructions) %>">
+                        <i data-lucide="eye"></i> View brief
+                    </button>
+                </div>
+            </article>
+            <% }) %>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<div id="mkModal" class="modal" aria-hidden="true">
+    <div class="modal-content mk-modal">
+        <span class="close js-mk-close" aria-label="Close">&times;</span>
+        <p class="mk-kicker" id="mkModalKicker">Live tender</p>
+        <h2 id="mkModalTitle">Tender brief</h2>
+        <p class="mk-modal-loc" id="mkModalLoc"></p>
+        <dl class="mk-detail">
+            <div><dt>Construction code</dt><dd id="mkDCode">—</dd></div>
+            <div><dt>BHK</dt><dd id="mkDBhk">—</dd></div>
+            <div><dt>Floors</dt><dd id="mkDFloors">—</dd></div>
+            <div><dt>Plot area</dt><dd id="mkDArea">—</dd></div>
+            <div><dt>Soil type</dt><dd id="mkDSoil">—</dd></div>
+            <div><dt>Timeline</dt><dd id="mkDTime">—</dd></div>
+            <div><dt>Materials provided</dt><dd id="mkDMaterials">—</dd></div>
+            <div><dt>Finalized plan</dt><dd id="mkDPlan">—</dd></div>
+            <div><dt>Ancillary</dt><dd id="mkDAncillary">—</dd></div>
+            <div><dt>External works</dt><dd id="mkDExternal">—</dd></div>
+            <div><dt>Boundary wall</dt><dd id="mkDWall">—</dd></div>
+            <div><dt>Estimated cost</dt><dd id="mkDCost" class="mk-cost">—</dd></div>
+        </dl>
+        <div class="mk-notes">
+            <span>Special instructions</span>
+            <p id="mkDNotes">—</p>
+        </div>
+        <div class="mk-modal-actions">
+            <button type="button" class="mk-btn js-mk-close">Close</button>
+            <% if (kycApproved) { %>
+            <a class="mk-btn mk-btn-primary" href="/contractor/bids"><i data-lucide="gavel"></i> Place bid · ₹499</a>
+            <% } else { %>
+            <a class="mk-btn mk-btn-primary" href="/contractor/dashboard"><i data-lucide="shield-check"></i> Complete KYC to bid</a>
+            <% } %>
+        </div>
     </div>
-    <script src="/js/app.js"></script>
+</div>
+
+<style>
+.mk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.25rem}
+.mk-stat{margin:0}
+.mk-empty{text-align:center;padding:3rem 1.5rem;border-radius:18px;border:1px solid var(--surface-border);background:rgba(15,23,42,.55)}
+.mk-empty-icon{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#eab308}
+.mk-empty-icon i{width:32px;height:32px}
+.mk-kicker{margin:0 0 .4rem;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#eab308}
+.mk-empty h3{margin:0 0 .5rem;font-family:'Outfit',sans-serif}
+.mk-empty p{margin:0 auto;max-width:420px;color:var(--text-muted)}
+.mk-toolbar{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-bottom:1.1rem}
+.mk-search{position:relative;flex:1 1 260px}
+.mk-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted)}
+.mk-search input{width:100%;padding:.75rem .9rem .75rem 2.4rem;border-radius:10px;background:rgba(15,23,42,.75);border:1px solid var(--surface-border);color:var(--text-main);font:inherit;outline:none}
+.mk-search input:focus{border-color:rgba(234,179,8,.55)}
+.mk-count{margin-left:auto;font-size:.78rem;color:var(--text-muted)}
+.mk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.mk-card{display:flex;flex-direction:column;padding:1.15rem 1.2rem;border-radius:16px;border:1px solid var(--surface-border);background:rgba(15,23,42,.55)}
+.mk-card-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.65rem}
+.mk-pill{display:inline-flex;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700;color:#4ade80;background:rgba(34,197,94,.14)}
+.mk-code{font-size:.78rem;color:var(--text-muted)}
+.mk-card h3{margin:0 0 .45rem;font-family:'Outfit',sans-serif;font-size:1.15rem}
+.mk-loc{display:flex;align-items:flex-start;gap:.35rem;margin:0 0 .9rem;color:var(--text-muted);font-size:.86rem;line-height:1.45}
+.mk-loc i{width:14px;height:14px;margin-top:.15rem;flex-shrink:0}
+.mk-meta{display:grid;grid-template-columns:1fr 1fr;gap:.65rem .75rem;margin:0 0 1rem}
+.mk-meta dt{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.mk-meta dd{margin:.15rem 0 0;font-size:.88rem;font-weight:600}
+.mk-card-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:.75rem;margin-top:auto;padding-top:.9rem;border-top:1px solid var(--surface-border)}
+.mk-cost-label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.2rem}
+.mk-cost{color:#4ade80;font-weight:700;font-size:1.05rem}
+.mk-btn{display:inline-flex;align-items:center;gap:.35rem;height:34px;padding:0 .8rem;border-radius:8px;font:inherit;font-size:.78rem;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid var(--surface-border);background:rgba(255,255,255,.04);color:var(--text-main)}
+.mk-btn i{width:14px;height:14px}
+.mk-btn-primary{background:#eab308;border-color:#eab308;color:#111827}
+.mk-modal{max-width:640px;padding:1.6rem}
+.mk-modal h2{margin:0 0 .35rem;font-family:'Outfit',sans-serif}
+.mk-modal-loc{margin:0 0 1.1rem;color:var(--text-muted);font-size:.9rem}
+.mk-detail{display:grid;grid-template-columns:1fr 1fr;gap:.7rem .9rem;margin:0 0 1rem}
+.mk-detail dt{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.mk-detail dd{margin:.2rem 0 0;font-size:.9rem}
+.mk-notes{padding:.85rem 1rem;border-radius:12px;border:1px solid var(--surface-border);background:rgba(255,255,255,.03);margin-bottom:1.1rem}
+.mk-notes span{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.35rem}
+.mk-notes p{margin:0;font-size:.88rem;line-height:1.55;white-space:pre-wrap}
+.mk-modal-actions{display:flex;justify-content:flex-end;gap:.55rem;flex-wrap:wrap}
+.modal.is-open{display:flex}
+@media (max-width:640px){
+    .mk-detail,.mk-meta{grid-template-columns:1fr}
+    .mk-card-foot{flex-direction:column;align-items:stretch}
+}
+</style>
+
+<script src="/js/app.js"></script>
+<script>
+if (window.lucide) lucide.createIcons();
+(function () {
+    var search = document.getElementById('mkSearch');
+    var grid = document.getElementById('mkGrid');
+    var countEl = document.getElementById('mkCount');
+    if (!grid) return;
+    function apply() {
+        var q = (search && search.value ? search.value : '').trim().toLowerCase();
+        var shown = 0;
+        grid.querySelectorAll('.mk-card').forEach(function (card) {
+            var match = !q || (card.getAttribute('data-search') || '').indexOf(q) !== -1;
+            card.style.display = match ? '' : 'none';
+            if (match) shown += 1;
+        });
+        if (countEl) countEl.textContent = shown + ' listing' + (shown === 1 ? '' : 's');
+    }
+    if (search) search.addEventListener('input', apply);
+})();
+
+(function () {
+    var modal = document.getElementById('mkModal');
+    if (!modal) return;
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value || '—';
+    }
+    function openBrief(btn) {
+        var id = btn.getAttribute('data-id');
+        setText('mkModalKicker', 'Live tender');
+        setText('mkModalTitle', 'Tender #' + id);
+        setText('mkModalLoc', btn.getAttribute('data-loc'));
+        setText('mkDCode', btn.getAttribute('data-code'));
+        setText('mkDBhk', btn.getAttribute('data-bhk'));
+        setText('mkDFloors', btn.getAttribute('data-floors'));
+        setText('mkDArea', btn.getAttribute('data-area'));
+        setText('mkDSoil', btn.getAttribute('data-soil'));
+        setText('mkDTime', btn.getAttribute('data-time'));
+        setText('mkDMaterials', btn.getAttribute('data-materials'));
+        setText('mkDPlan', btn.getAttribute('data-plan'));
+        setText('mkDAncillary', btn.getAttribute('data-ancillary'));
+        setText('mkDExternal', btn.getAttribute('data-external'));
+        setText('mkDWall', btn.getAttribute('data-wall'));
+        setText('mkDCost', btn.getAttribute('data-cost'));
+        setText('mkDNotes', btn.getAttribute('data-notes'));
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        if (window.lucide) lucide.createIcons();
+    }
+    function closeBrief() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    document.querySelectorAll('.js-mk-open').forEach(function (btn) {
+        btn.addEventListener('click', function () { openBrief(btn); });
+    });
+    document.querySelectorAll('.js-mk-close').forEach(function (btn) {
+        btn.addEventListener('click', closeBrief);
+    });
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeBrief();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeBrief();
+    });
+})();
+</script>

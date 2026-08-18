@@ -4,12 +4,32 @@
     function safe(val) {
         return (val === undefined || val === null || val === '') ? '—' : val;
     }
+    function escAttr(val) {
+        return String(val || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
     function money(amount) {
         if (amount === undefined || amount === null || amount === '') return '—';
         var n = Number(amount);
         if (isNaN(n)) return '₹' + amount;
         return '₹' + n.toLocaleString('en-IN');
     }
+    function budgetBadge(status) {
+        var s = String(status || 'pending').toLowerCase();
+        if (s === 'approved') return { cls: 'is-ok', label: 'Approved' };
+        if (s === 'estimated') return { cls: 'is-info', label: 'Estimated' };
+        return { cls: 'is-warn', label: 'Pending' };
+    }
+    var countEstimated = estimated.filter(function (t) {
+        return String(t.budget_status || '').toLowerCase() === 'estimated';
+    }).length;
+    var countApproved = estimated.filter(function (t) {
+        return String(t.budget_status || '').toLowerCase() === 'approved';
+    }).length;
 %>
 <div class="background-animation"></div>
 <div class="dashboard-layout">
@@ -19,7 +39,7 @@
         <header class="dashboard-header">
             <div>
                 <h2>Completed Budget</h2>
-                <p style="color: var(--text-muted); margin-top: 0.35rem;">Review finalized estimates. Reopen any tender to edit the budget again.</p>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Review finalized estimates, open reports, and reopen tenders when needed.</p>
             </div>
             <div class="header-highlight">
                 <span>Done</span>
@@ -27,10 +47,13 @@
             </div>
         </header>
 
-        <% if (typeof notice !== 'undefined' && notice === 'saved') { %>
+        <% if (typeof notice !== 'undefined' && (notice === 'saved' || notice === 'approved')) { %>
         <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
             <i data-lucide="check-circle"></i>
-            <div><strong>Budget saved</strong><p>Estimate forwarded to the completed queue.</p></div>
+            <div>
+                <strong><%= notice === 'approved' ? 'Budget approved' : 'Budget saved' %></strong>
+                <p style="margin:0;color:var(--text-muted);"><%= notice === 'approved' ? 'Status set to approved.' : 'Estimate added to the completed queue.' %></p>
+            </div>
         </div>
         <% } %>
 
@@ -41,62 +64,451 @@
         </div>
         <% } %>
 
-        <% if (!estimated.length) { %>
-        <div class="empty-state">
-            <i data-lucide="database" style="width:48px;height:48px;margin-bottom:1rem;color:var(--surface-border);"></i>
-            <h3>No completed estimations yet</h3>
-            <p>Finished budget reports will show up here.</p>
+        <div class="bc-stats">
+            <article class="stat-card bc-stat">
+                <i data-lucide="database" style="color:#38bdf8;"></i>
+                <h3><%= estimated.length %></h3>
+                <p>Total completed</p>
+            </article>
+            <article class="stat-card bc-stat">
+                <i data-lucide="calculator" style="color:#38bdf8;"></i>
+                <h3><%= countEstimated %></h3>
+                <p>Estimated</p>
+            </article>
+            <article class="stat-card bc-stat">
+                <i data-lucide="badge-check" style="color:#22c55e;"></i>
+                <h3><%= countApproved %></h3>
+                <p>Approved</p>
+            </article>
         </div>
+
+        <% if (!estimated.length) { %>
+        <section class="ba-empty">
+            <div class="ba-empty-glow" aria-hidden="true"></div>
+            <div class="ba-empty-icon">
+                <i data-lucide="database"></i>
+            </div>
+            <p class="ba-empty-kicker">Completed desk</p>
+            <h3>No completed estimations yet</h3>
+            <p class="ba-empty-copy">Finished budget reports will appear here after estimations are submitted from the pending queue.</p>
+            <div class="ba-empty-actions">
+                <a href="/budget-admin/pending" class="ba-empty-btn ba-empty-btn-primary">
+                    <i data-lucide="clock"></i> Open pending queue
+                </a>
+                <a href="/budget-admin" class="ba-empty-btn">
+                    <i data-lucide="layout-dashboard"></i> Back to overview
+                </a>
+            </div>
+        </section>
         <% } else { %>
-        <div style="overflow-x:auto;border:1px solid var(--surface-border);border-radius:12px;background:rgba(15,23,42,0.45);">
-            <table style="width:100%;border-collapse:collapse;min-width:860px;">
-                <thead>
-                    <tr style="text-align:left;color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;">
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Tender</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Owner</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Owner budget</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Estimated cost</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Target date</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Report</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% estimated.forEach(function (t) { %>
-                    <tr>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">#<%= t.tender_id %></td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
-                            <strong><%= safe(t.owner_name) %></strong>
-                            <div style="font-size:0.8rem;color:var(--text-muted);"><%= safe(t.owner_email) %></div>
-                        </td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);"><%= money(t.budget) %></td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);color:#22c55e;font-weight:600;"><%= money(t.estimated_cost) %></td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
-                            <%= t.estimated_completion_date ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN') : '—' %>
-                        </td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
-                            <% if (t.budget_report) { %>
-                            <a href="/budget-admin/view-report?file=<%= encodeURIComponent(t.budget_report) %>" target="_blank" rel="noopener" style="color:#38bdf8;text-decoration:none;">Open PDF</a>
-                            <% } else { %>
-                            —
-                            <% } %>
-                        </td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
-                            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                                <a href="/budget-admin/estimate/<%= t.tender_id %>" style="padding:0.35rem 0.65rem;border-radius:8px;border:1px solid var(--surface-border);color:inherit;text-decoration:none;font-size:0.8rem;">Edit</a>
-                                <form method="post" action="/budget-admin/reopen/<%= t.tender_id %>" style="margin:0;">
-                                    <button type="submit" style="padding:0.35rem 0.65rem;border-radius:8px;border:1px solid rgba(234,179,8,0.35);background:transparent;color:#eab308;font:inherit;font-size:0.8rem;cursor:pointer;">Reopen</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
+        <div class="bc-panel">
+            <div class="bc-toolbar">
+                <div class="bc-search">
+                    <i data-lucide="search"></i>
+                    <input id="completedSearch" type="search" placeholder="Search tender, owner, code, status...">
+                </div>
+                <select id="completedStatusFilter">
+                    <option value="all">All status</option>
+                    <option value="estimated">Estimated</option>
+                    <option value="approved">Approved</option>
+                </select>
+                <span class="bc-count"><%= estimated.length %> records</span>
+            </div>
+
+            <div class="bc-table-wrap">
+                <table id="completedTable" class="bc-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Owner budget</th>
+                            <th>Estimated cost</th>
+                            <th>Status</th>
+                            <th>Target date</th>
+                            <th>Documents</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% estimated.forEach(function (t, i) {
+                            var badge = budgetBadge(t.budget_status);
+                            var targetDate = t.estimated_completion_date
+                                ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN')
+                                : '—';
+                            var submitted = t.created_at ? new Date(t.created_at).toLocaleString('en-IN') : '—';
+                        %>
+                        <tr data-search="<%= [t.tender_id, t.owner_name, t.owner_email, t.constructionCode, t.budget_status, badge.label, t.estimated_cost].join(' ').toLowerCase() %>"
+                            data-status="<%= String(t.budget_status || 'estimated').toLowerCase() %>">
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="bc-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="bc-sub"><%= safe(t.owner_email) %></div>
+                            </td>
+                            <td><%= money(t.budget) %></td>
+                            <td><span class="bc-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><span class="bc-pill <%= badge.cls %>"><%= badge.label %></span></td>
+                            <td><%= targetDate %></td>
+                            <td>
+                                <div class="bc-docs">
+                                    <button type="button" class="bc-btn bc-btn-ghost"
+                                        onclick="window.openTenderA4 && window.openTenderA4(this)"
+                                        data-tender-id="<%= escAttr(t.tender_id) %>"
+                                        data-owner-name="<%= escAttr(safe(t.owner_name)) %>"
+                                        data-owner-email="<%= escAttr(safe(t.owner_email)) %>"
+                                        data-owner-mobile="<%= escAttr(safe(t.owner_mobile)) %>"
+                                        data-construction-code="<%= escAttr(safe(t.constructionCode)) %>"
+                                        data-plot-area="<%= escAttr(safe(t.plotArea)) %>"
+                                        data-soil-type="<%= escAttr(safe(t.soilType)) %>"
+                                        data-location="<%= escAttr(safe(t.plotLocation)) %>"
+                                        data-bhk="<%= escAttr(safe(t.bhk)) %>"
+                                        data-floors="<%= escAttr(safe(t.floors)) %>"
+                                        data-budget="<%= escAttr(money(t.budget)) %>"
+                                        data-materials-provided="<%= escAttr(safe(t.materialsProvided)) %>"
+                                        data-finalized-plan="<%= escAttr(safe(t.finalizedPlan)) %>"
+                                        data-ancillary-requirements="<%= escAttr(safe(t.ancillary_requirements)) %>"
+                                        data-external-works="<%= escAttr(safe(t.externalWorks)) %>"
+                                        data-boundary-wall-type="<%= escAttr(safe(t.boundaryWallType)) %>"
+                                        data-construction-time="<%= escAttr(safe(t.constructionTime)) %>"
+                                        data-special-instructions="<%= escAttr(safe(t.specialInstructions)) %>"
+                                        data-architectural-plan="<%= escAttr(safe(t.architectural_plan)) %>"
+                                        data-plot-documents="<%= escAttr(safe(t.Plot_documents)) %>"
+                                        data-house-owner-digital-signature="<%= escAttr(safe(t.house_owner_digital_signature)) %>"
+                                        data-payment-status="<%= escAttr(safe(t.payment_status)) %>"
+                                        data-payment-amount="<%= escAttr(money(t.payment_amount)) %>"
+                                        data-budget-status="<%= escAttr(safe(t.budget_status)) %>"
+                                        data-estimated-cost="<%= escAttr(money(t.estimated_cost)) %>"
+                                        data-created-at="<%= escAttr(submitted) %>">
+                                        <i data-lucide="eye"></i> View Tender
+                                    </button>
+                                    <% if (t.budget_report && String(t.budget_report).trim()) { %>
+                                    <a href="/budget-admin/view-report?file=<%= encodeURIComponent(t.budget_report) %>" target="_blank" rel="noopener" class="bc-btn bc-btn-report">
+                                        <i data-lucide="file-text"></i> Budget report
+                                    </a>
+                                    <% } %>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="bc-actions">
+                                    <a href="/budget-admin/estimate/<%= t.tender_id %>" class="bc-btn bc-btn-edit">
+                                        <i data-lucide="pencil"></i> Edit
+                                    </a>
+                                    <form method="post" action="/budget-admin/reopen/<%= t.tender_id %>" style="margin:0;">
+                                        <button type="submit" class="bc-btn bc-btn-warn" onclick="return confirm('Reopen this tender for re-estimation?');">
+                                            <i data-lucide="rotate-ccw"></i> Reopen
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <% } %>
     </main>
 </div>
 
+<style>
+.ba-empty {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3.25rem 2rem;
+    border-radius: 18px;
+    border: 1px solid rgba(56,189,248,0.18);
+    background: radial-gradient(circle at top, rgba(34,197,94,0.1), transparent 42%), rgba(15,23,42,0.62);
+}
+.ba-empty-glow {
+    position: absolute;
+    inset: auto -20% -40% auto;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(56,189,248,0.14), transparent 70%);
+    pointer-events: none;
+}
+.ba-empty-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.15rem;
+    background: rgba(56,189,248,0.12);
+    border: 1px solid rgba(56,189,248,0.28);
+    color: #38bdf8;
+}
+.ba-empty-icon i { width: 34px; height: 34px; }
+.ba-empty-kicker {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #38bdf8;
+}
+.ba-empty h3 {
+    margin: 0 0 0.55rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.65rem;
+    color: #fff;
+}
+.ba-empty-copy {
+    max-width: 460px;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+.ba-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem;
+    margin-top: 1.35rem;
+}
+.ba-empty-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 40px;
+    padding: 0 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    background: rgba(255,255,255,0.04);
+    color: #e2e8f0;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.ba-empty-btn-primary {
+    background: #38bdf8;
+    border-color: #38bdf8;
+    color: #0f172a;
+}
+.bc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.bc-stat { margin: 0; }
+.bc-panel {
+    background: rgba(15,23,42,0.55);
+    border: 1px solid var(--surface-border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.bc-toolbar {
+    display: flex;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 1rem 1.1rem;
+    border-bottom: 1px solid var(--surface-border);
+    background: rgba(2,6,23,0.28);
+}
+.bc-search {
+    position: relative;
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+.bc-search i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+.bc-search input,
+.bc-toolbar select {
+    width: 100%;
+    padding: 0.7rem 0.85rem 0.7rem 2.4rem;
+    border-radius: 10px;
+    background: rgba(15,23,42,0.75);
+    border: 1px solid var(--surface-border);
+    color: #fff;
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+}
+.bc-toolbar select {
+    width: auto;
+    min-width: 150px;
+    padding-left: 0.85rem;
+    cursor: pointer;
+}
+.bc-count {
+    margin-left: auto;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.bc-table-wrap { overflow-x: auto; }
+.bc-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+}
+.bc-table th,
+.bc-table td {
+    padding: 0.85rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--surface-border);
+    vertical-align: middle;
+    font-size: 0.86rem;
+}
+.bc-table thead th {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+}
+.bc-table tbody tr:hover td { background: rgba(56,189,248,0.05); }
+.bc-sub {
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.bc-cost {
+    color: #4ade80;
+    font-weight: 700;
+}
+.bc-pill {
+    display: inline-flex;
+    padding: 0.22rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.bc-pill.is-ok { color: #4ade80; background: rgba(34,197,94,0.12); }
+.bc-pill.is-info { color: #38bdf8; background: rgba(56,189,248,0.12); }
+.bc-pill.is-warn { color: #facc15; background: rgba(234,179,8,0.12); }
+.bc-docs,
+.bc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+.bc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    height: 32px;
+    padding: 0 0.7rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.bc-btn i { width: 13px; height: 13px; }
+.bc-btn-ghost {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--surface-border);
+    color: #e2e8f0;
+}
+.bc-btn-ghost:hover { background: rgba(255,255,255,0.08); }
+.bc-btn-report {
+    background: rgba(34,197,94,0.1);
+    border-color: rgba(34,197,94,0.35);
+    color: #86efac;
+}
+.bc-btn-report:hover { background: rgba(34,197,94,0.18); }
+.bc-btn-edit {
+    background: rgba(56,189,248,0.1);
+    border-color: rgba(56,189,248,0.35);
+    color: #7dd3fc;
+}
+.bc-btn-edit:hover { background: rgba(56,189,248,0.18); }
+.bc-btn-warn {
+    background: rgba(234,179,8,0.08);
+    border-color: rgba(234,179,8,0.35);
+    color: #fde047;
+}
+.bc-btn-warn:hover { background: rgba(234,179,8,0.16); }
+</style>
+
 <script src="/js/app.js"></script>
-<script>if (window.lucide) lucide.createIcons();</script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    (function () {
+        var search = document.getElementById('completedSearch');
+        var filter = document.getElementById('completedStatusFilter');
+        var table = document.getElementById('completedTable');
+        if (!table) return;
+
+        function applyFilters() {
+            var q = (search && search.value ? search.value : '').trim().toLowerCase();
+            var s = filter ? filter.value : 'all';
+            table.querySelectorAll('tbody tr').forEach(function (row) {
+                var hay = row.getAttribute('data-search') || '';
+                var status = row.getAttribute('data-status') || '';
+                var matchSearch = !q || hay.indexOf(q) !== -1;
+                var matchStatus = s === 'all' || status === s;
+                row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+            });
+        }
+
+        if (search) search.addEventListener('input', applyFilters);
+        if (filter) filter.addEventListener('change', applyFilters);
+        applyFilters();
+    })();
+
+    window.openTenderA4 = function (btn) {
+        if (!btn || !btn.dataset) return;
+        var d = btn.dataset;
+        var w = window.open('about:blank', 'TenderA4_' + (d.tenderId || ''), 'width=980,height=720');
+        if (!w) {
+            alert('Pop-up blocked. Please allow pop-ups to view the A4 tender page.');
+            return;
+        }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Tender A4</title>';
+        html += '<style>@page{size:A4;margin:18mm;}body{font-family:Arial,sans-serif;color:#111;}';
+        html += 'table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}';
+        html += 'th{background:#f3f4f6;font-size:12px;}.sec{margin-top:16px;}.title{font-size:18px;font-weight:700;margin:0;}';
+        html += '.sub{color:#555;font-size:13px;margin:4px 0 0;}</style></head><body>';
+        html += '<p class="title">BuildTender — Tender #' + (d.tenderId || '') + '</p>';
+        html += '<p class="sub">Completed budget brief · ' + new Date().toLocaleString('en-IN') + '</p>';
+        html += '<div class="sec"><table><tbody>';
+        html += '<tr><th>Owner</th><td>' + (d.ownerName || '—') + '</td></tr>';
+        html += '<tr><th>Email</th><td>' + (d.ownerEmail || '—') + '</td></tr>';
+        html += '<tr><th>Mobile</th><td>' + (d.ownerMobile || '—') + '</td></tr>';
+        html += '<tr><th>Construction code</th><td>' + (d.constructionCode || '—') + '</td></tr>';
+        html += '<tr><th>Plot area</th><td>' + (d.plotArea || '—') + '</td></tr>';
+        html += '<tr><th>Location</th><td>' + (d.location || '—') + '</td></tr>';
+        html += '<tr><th>BHK / Floors</th><td>' + (d.bhk || '—') + ' · ' + (d.floors || '—') + '</td></tr>';
+        html += '<tr><th>Owner budget</th><td>' + (d.budget || '—') + '</td></tr>';
+        html += '<tr><th>Estimated cost</th><td>' + (d.estimatedCost || '—') + '</td></tr>';
+        html += '<tr><th>Budget status</th><td>' + (d.budgetStatus || '—') + '</td></tr>';
+        html += '<tr><th>Special instructions</th><td>' + (d.specialInstructions || '—') + '</td></tr>';
+        html += '</tbody></table></div>';
+        html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;gap:10px;">';
+        html += '<button onclick="window.print()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#111;color:#fff;cursor:pointer;">Print</button>';
+        html += '<button onclick="window.close()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#111;cursor:pointer;">Close</button>';
+        html += '</div></body></html>';
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+    };
+</script>

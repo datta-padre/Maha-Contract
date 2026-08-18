@@ -143,8 +143,14 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="experience">Years of Active Experience <span class="req">*</span></label>
-                        <input type="number" id="experience" name="experience" class="custom-input"
-                               placeholder="e.g. 5" min="0" max="60" value="<%= v('experience') %>" required>
+                        <div class="kyc-exp-wrap">
+                            <input type="text" id="experience" name="experience" class="custom-input"
+                                   placeholder="e.g. 5" inputmode="numeric" maxlength="20"
+                                   value="<%= v('experience') %>" required
+                                   autocomplete="off">
+                            <span class="kyc-exp-suffix">years</span>
+                        </div>
+                        <span class="field-hint">Enter years of construction experience</span>
                     </div>
                     <div class="form-group">
                         <label for="specialization">Specialization <span class="req">*</span></label>
@@ -425,6 +431,30 @@
         </form>
     </main>
 </div>
+
+<style>
+.kyc-form .form-group input,
+.kyc-form .form-group select {
+    color: var(--text-main);
+    -webkit-text-fill-color: var(--text-main);
+}
+.kyc-exp-wrap {
+    position: relative;
+}
+.kyc-exp-wrap input {
+    padding-right: 4.5rem;
+}
+.kyc-exp-suffix {
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+</style>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="/js/app.js"></script>

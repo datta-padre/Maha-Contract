@@ -1,5 +1,5 @@
 <%- include('../partials/header') %>
-<div class="background-animation" style="background-image: linear-gradient(rgba(15,23,42,0.85), rgba(15,23,42,0.85)), url('hero-bg.png'); background-size: cover; background-position: center;"></div>
+<div class="background-animation"></div>
     
     <div class="dashboard-layout">
         <aside class="sidebar">
@@ -50,12 +50,26 @@
                     return '<a href="' + href + '" target="_blank" rel="noopener" class="tender-doc-btn" title="' + name + '"><i data-lucide="file-text"></i> view-doc</a>';
                 }
 
+                function budgetReportBtn(file) {
+                    if (!file || String(file).trim() === '') return '';
+                    var name = String(file).trim();
+                    var href = '/budget-reports/' + encodeURIComponent(name);
+                    return '<a href="' + href + '" target="_blank" rel="noopener" class="tender-doc-btn tender-doc-btn-report" title="' + escAttr(name) + '"><i data-lucide="file-text"></i> budget_report</a>';
+                }
+
                 function budgetBadge(status) {
                     var s = String(status || 'pending').toLowerCase();
-                    if (s === 'estimated') {
-                        return { cls: 'is-ok', label: 'Estimated' };
-                    }
+                    if (s === 'approved') return { cls: 'is-ok', label: 'Approved' };
+                    if (s === 'estimated') return { cls: 'is-info', label: 'Estimated' };
                     return { cls: 'is-warn', label: 'Pending' };
+                }
+                function canApproveBudget(t) {
+                    var s = String((t && t.budget_status) || '').toLowerCase().trim();
+                    if (s === 'approved') return false;
+                    if (s === 'estimated') return true;
+                    if (t && t.estimated_cost && String(t.estimated_cost).trim()) return true;
+                    if (t && t.budget_report && String(t.budget_report).trim()) return true;
+                    return false;
                 }
                 function payBadge(status) {
                     var s = String(status || 'pending').toLowerCase();
@@ -198,10 +212,26 @@
                     letter-spacing: 0.02em;
                 }
                 .status-pill.is-ok{ color:#4ade80; background:rgba(34,197,94,0.12); }
+                .status-pill.is-info{ color:#38bdf8; background:rgba(56,189,248,0.12); }
                 .status-pill.is-warn{ color:#facc15; background:rgba(234,179,8,0.12); }
                 .status-pill.is-bad{ color:#f87171; background:rgba(239,68,68,0.12); }
-                .tender-doc-btn,
-                .tender-del-btn{
+                .tender-approve-btn{
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.3rem;
+                    height: 32px;
+                    padding: 0 0.7rem;
+                    border-radius: 8px;
+                    border: 1px solid rgba(34,197,94,0.4);
+                    background: rgba(34,197,94,0.12);
+                    color: #86efac;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+                .tender-approve-btn:hover{ background: rgba(34,197,94,0.2); }
+                .tender-approve-btn i{ width: 13px; height: 13px; }
+                .tender-doc-btn{
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
@@ -216,8 +246,7 @@
                     cursor: pointer;
                     border: 1px solid transparent;
                 }
-                .tender-doc-btn i,
-                .tender-del-btn i{ width: 13px; height: 13px; }
+                .tender-doc-btn i{ width: 13px; height: 13px; }
                 .tender-doc-btn{
                     background: rgba(56,189,248,0.10);
                     border-color: rgba(56,189,248,0.32);
@@ -242,14 +271,14 @@
                     background: rgba(167,139,250,0.2);
                     color: #ede9fe;
                 }
-                .tender-del-btn{
-                    background: rgba(239,68,68,0.08);
-                    border-color: rgba(239,68,68,0.35);
-                    color: #fca5a5;
+                .tender-doc-btn-report{
+                    background: rgba(34,197,94,0.10);
+                    border-color: rgba(34,197,94,0.35);
+                    color: #86efac;
                 }
-                .tender-del-btn:hover{
-                    background: rgba(239,68,68,0.16);
-                    color: #fecaca;
+                .tender-doc-btn-report:hover{
+                    background: rgba(34,197,94,0.18);
+                    color: #bbf7d0;
                 }
                 .tender-actions{
                     display: flex;
@@ -271,10 +300,10 @@
 
             <div id="tenderContainer" class="tenders-panel">
                 <% if (typeof notice !== 'undefined' && notice) { %>
-                <div class="alert-banner" style="margin:1rem 1.1rem 0;border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.08);">
-                    <i data-lucide="trash-2"></i>
+                <div class="alert-banner" style="margin:1rem 1.1rem 0;border-color:<%= notice === 'approved' ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)' %>;background:<%= notice === 'approved' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)' %>;">
+                    <i data-lucide="<%= notice === 'approved' ? 'check-circle' : 'info' %>"></i>
                     <div>
-                        <strong><%= notice === 'deleted' ? 'Tender deleted' : 'Notice' %></strong>
+                        <strong><%= notice === 'approved' ? 'Budget approved' : (notice === 'deleted' ? 'Tender deleted' : 'Notice') %></strong>
                         <p style="margin:0;color:var(--text-muted);">Update complete.</p>
                     </div>
                 </div>
@@ -293,8 +322,9 @@
                     </select>
                     <select id="tenderBudgetFilter">
                         <option value="all">All budget</option>
-                        <option value="pending">Budget pending</option>
+                        <option value="pending">Pending</option>
                         <option value="estimated">Estimated</option>
+                        <option value="approved">Approved</option>
                     </select>
                     <span class="tender-count"><%= (tenders && tenders.length) ? tenders.length : 0 %> tenders</span>
                 </div>
@@ -308,6 +338,7 @@
                             <th>Budget</th>
                             <th>Plan</th>
                             <th>Plot docs</th>
+                            <th>budget_report</th>
                             <th>Location</th>
                             <th>Actions</th>
                         </tr>
@@ -328,16 +359,18 @@
                                     <td><span class="status-pill <%= budget.cls %>"><%= budget.label %></span></td>
                                     <td><%- tenderDoc(t.architectural_plan) %></td>
                                     <td><%- tenderDoc(t.Plot_documents) %></td>
+                                    <td>
+                                        <% if (t.budget_report && String(t.budget_report).trim()) { %>
+                                            <%- budgetReportBtn(t.budget_report) %>
+                                        <% } else { %>
+                                            <span style="color:var(--text-muted);">—</span>
+                                        <% } %>
+                                    </td>
                                     <td><%- viewLocation(t.plotLocation) %></td>
                                     <td>
                                         <% if (t && t.tender_id) { %>
                                             <div class="tender-actions">
                                                 <%- viewTenderA4(t) %>
-                                                <form method="post" action="/houseowner/delete-tender/<%= t.tender_id %>" style="display:inline;margin:0;">
-                                                    <button type="submit" class="tender-del-btn" onclick="return confirm('Delete this tender? This cannot be undone.');">
-                                                        <i data-lucide="trash-2"></i> Delete
-                                                    </button>
-                                                </form>
                                             </div>
                                         <% } %>
                                     </td>
@@ -345,7 +378,7 @@
                             <% }) %>
                         <% } else { %>
                             <tr>
-                                <td colspan="9">
+                                <td colspan="10">
                                     <div class="tender-empty">
                                         <i data-lucide="file-text"></i>
                                         <p>No tenders found.</p>

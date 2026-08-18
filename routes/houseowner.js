@@ -163,43 +163,4 @@ router.post('/save-tender', houseownerOnly, async (req, res) => {
     res.redirect('/houseowner/tenders');
 });
 
-// Delete tender (only for the logged-in houseowner)
-router.post('/delete-tender/:id', houseownerOnly, async (req, res) => {
-    try {
-        var tenderId = Number(req.params.id);
-        if (!tenderId) return res.redirect('/houseowner/tenders');
-
-        var rows = await exe(
-            `SELECT tender_id, architectural_plan, Plot_documents, house_owner_digital_signature
-             FROM tenders
-             WHERE tender_id = ? AND user_id = ? LIMIT 1`,
-            [tenderId, req.user_id]
-        );
-
-        if (!Array.isArray(rows) || !rows.length) return res.redirect('/houseowner/tenders');
-
-        var t = rows[0];
-
-        // Best-effort file cleanup
-        var files = [t.architectural_plan, t.Plot_documents, t.house_owner_digital_signature]
-            .filter(function (x) { return x && String(x).trim(); })
-            .map(function (x) { return String(x).trim(); });
-
-        for (var i = 0; i < files.length; i++) {
-            try {
-                var p = 'public/tenders/' + files[i];
-                if (fs.existsSync(p)) fs.unlinkSync(p);
-            } catch (e) {
-                // Ignore file delete errors
-            }
-        }
-
-        await exe(`DELETE FROM tenders WHERE tender_id = ? AND user_id = ?`, [tenderId, req.user_id]);
-        return res.redirect('/houseowner/tenders?notice=deleted');
-    } catch (err) {
-        console.error(err);
-        return res.redirect('/houseowner/tenders');
-    }
-});
-
 module.exports = router;

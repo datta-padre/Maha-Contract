@@ -1,0 +1,88 @@
+<%
+    var loginError = (typeof error !== 'undefined' && error) ? error : '';
+    var loginNotice = (typeof notice !== 'undefined' && notice) ? notice : '';
+    var loginEndpoint = (typeof loginEndpoint !== 'undefined' && loginEndpoint) ? loginEndpoint : '/login';
+%>
+<div class="lg-shell">
+    <section class="lg-art" aria-hidden="true">
+        <div class="lg-art-scene">
+            <span class="lg-blob lg-blob-a"></span>
+            <span class="lg-blob lg-blob-b"></span>
+            <span class="lg-check">✓</span>
+            <svg class="lg-illu" viewBox="0 0 520 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="270" cy="368" rx="150" ry="18" class="lg-illu-shadow"/>
+                <rect x="168" y="248" width="228" height="18" rx="6" class="lg-illu-desk"/>
+                <rect x="156" y="264" width="252" height="12" rx="4" class="lg-illu-desk-edge"/>
+                <rect x="214" y="188" width="148" height="88" rx="10" class="lg-illu-laptop"/>
+                <rect x="226" y="198" width="124" height="68" rx="6" class="lg-illu-screen"/>
+                <rect x="248" y="276" width="80" height="8" rx="4" class="lg-illu-keyboard"/>
+                <circle cx="288" cy="148" r="28" class="lg-illu-hair"/>
+                <circle cx="288" cy="154" r="22" class="lg-illu-skin"/>
+                <path d="M248 214c8-28 72-28 80 0v46c-10 22-70 22-80 0v-46z" class="lg-illu-shirt"/>
+                <rect x="118" y="214" width="28" height="52" rx="4" class="lg-illu-book-a"/>
+                <rect x="108" y="228" width="48" height="10" rx="2" class="lg-illu-book-b"/>
+                <rect x="122" y="238" width="36" height="12" rx="2" class="lg-illu-book-c"/>
+                <path d="M78 250c18-42 48-38 52-8 22-18 48 6 28 32-38 8-62 4-80-24z" class="lg-illu-leaf"/>
+                <rect x="92" y="268" width="28" height="22" rx="6" class="lg-illu-pot"/>
+                <circle cx="148" cy="248" r="8" class="lg-illu-cup"/>
+                <rect x="392" y="118" width="46" height="12" rx="3" class="lg-illu-shelf"/>
+                <rect x="398" y="92" width="12" height="28" rx="2" class="lg-illu-book-d"/>
+                <rect x="414" y="98" width="12" height="22" rx="2" class="lg-illu-book-e"/>
+                <rect x="430" y="86" width="12" height="34" rx="2" class="lg-illu-book-f"/>
+            </svg>
+        </div>
+    </section>
+
+    <main class="lg-form-side">
+        <div class="lg-form-wrap">
+            <a href="/" class="lg-brand">
+                <span class="lg-brand-mark"></span>
+                <span class="notranslate lg-brand-name"><span>Build</span>Tender</span>
+            </a>
+
+            <h1>Welcome Back! <span aria-hidden="true">👋</span></h1>
+            <p class="lg-sub">Log In to Your BuildTender Account!</p>
+
+            <% if (loginNotice) { %>
+            <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
+                <i data-lucide="check-circle"></i>
+                <div><strong>Ready</strong><p><%= loginNotice %></p></div>
+            </div>
+            <% } %>
+
+            <div id="loginAlert" class="alert-banner alert-error lg-alert" <%= loginError ? '' : 'hidden' %> role="alert">
+                <i data-lucide="alert-circle"></i>
+                <div>
+                    <strong>Could not sign in</strong>
+                    <p id="loginAlertText"><%= loginError || 'Please check your credentials.' %></p>
+                </div>
+            </div>
+
+            <form id="loginForm" method="post" action="<%= loginEndpoint %>" novalidate>
+                <label class="lg-label" for="loginEmail">Registered Email</label>
+                <div class="lg-input">
+                    <i data-lucide="user"></i>
+                    <input type="text" id="loginEmail" name="email" placeholder="Type your username" autocomplete="username" required>
+                </div>
+
+                <label class="lg-label" for="loginPass">Current Password</label>
+                <div class="lg-input">
+                    <i data-lucide="lock"></i>
+                    <input type="password" id="loginPass" name="password" placeholder="Enter Your Password" autocomplete="current-password" required>
+                    <button type="button" class="lg-eye" id="togglePass" aria-label="Show password">
+                        <i data-lucide="eye"></i>
+                    </button>
+                </div>
+
+                <div class="lg-forgot-row">
+                    <a href="#" class="lg-forgot" id="forgotPass">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="lg-btn" id="loginSubmit">Login Now</button>
+            </form>
+
+
+            <p class="lg-copy"><span class="lg-mini-mark"></span> © 2026 BuildTender. All Rights Reserved.</p>
+        </div>
+    </main>
+</div>

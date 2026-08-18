@@ -25,6 +25,11 @@ CREATE TABLE tenders(
     plotArea VARCHAR(255),
     soilType VARCHAR(100),
     plotLocation TEXT,
+    state VARCHAR(100),
+    district VARCHAR(100),
+    taluka VARCHAR(100),
+    village VARCHAR(100),
+    pincode VARCHAR(10),
     constructionCode VARCHAR(50),
     materialsProvided ENUM('yes', 'no'),
     finalizedPlan ENUM('yes', 'no'),
@@ -45,6 +50,12 @@ CREATE TABLE tenders(
     payment_transaction_id VARCHAR(100),
     razorpay_order_id VARCHAR(100),
     payment_transaction_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    budget_status ENUM('pending','approved','estimated') DEFAULT 'pending',
+    estimated_cost VARCHAR(255),
+    estimated_completion_date DATE,
+    budget_report TEXT,
+    budget_notes TEXT,
+    budget_estimated_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -100,9 +111,19 @@ CREATE TABLE contractor_kyc(
         staff_email VARCHAR(255) ,
         staff_mobile VARCHAR(15) ,
         staff_password VARCHAR(255),
-        staff_role ENUM('VerifyAdmin','BudgetAdmin','MaterialsAdmin') NOT NULL,
+        staff_role ENUM('VerifyAdmin','BudgetAdmin','MaterialsAdmin','TenderAdmin') NOT NULL,
         staff_status ENUM('active', 'inactive') DEFAULT 'active',
         staff_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         staff_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     );
+
+
+
+CREATE TABLE assigned_tenders(
+    assigned_id INT AUTO_INCREMENT PRIMARY KEY,
+    tender_id INT,
+    contractor_id INT,
+    staff_id INT,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 

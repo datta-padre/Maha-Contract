@@ -27,6 +27,7 @@ const masterAdminRoutes = require('./routes/masterAdmin');
 const verifyAdminRoutes = require('./routes/verifyAdmin');
 const budgetAdminRoutes = require('./routes/budgetAdmin');
 const materialsAdminRoutes = require('./routes/materialsAdmin');
+const tenderAdminRoutes = require('./routes/tenderAdmin');
 
 app.use('/', userRoutes);
 app.use('/vendor', vendorRoutes);
@@ -36,5 +37,6 @@ app.use('/master-admin', masterAdminRoutes);
 app.use('/verify-admin', verifyAdminRoutes);
 app.use("/budget-admin", budgetAdminRoutes);
 app.use("/materials-admin", materialsAdminRoutes);
+app.use("/tender-admin", tenderAdminRoutes);
 
 app.listen(port, () => console.log(`BuildTender frontend running on http://localhost:${port}`));

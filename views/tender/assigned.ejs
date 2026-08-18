@@ -1,0 +1,204 @@
+<%- include('../partials/header') %>
+<%
+    var assigned = (typeof assignedTenders !== 'undefined' && Array.isArray(assignedTenders))
+        ? assignedTenders
+        : ((typeof tenders !== 'undefined' && Array.isArray(tenders)) ? tenders : []);
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    var contractorIds = {};
+    assigned.forEach(function (t) {
+        if (t.contractor_id) contractorIds[t.contractor_id] = true;
+    });
+    var uniqueContractors = Object.keys(contractorIds).length;
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar', { activePage: 'assigned' }) %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Assigned Tenders</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Contracts matched to contractors after marketplace award.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Assigned</span>
+                <strong><%= assigned.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof notice !== 'undefined' && notice) { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
+            <i data-lucide="check-circle"></i>
+            <div>
+                <strong>Contractor assigned</strong>
+                <p style="margin:0;color:var(--text-muted);">Assignment list refreshed.</p>
+            </div>
+        </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom:1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="tp-stats">
+            <article class="stat-card tp-stat">
+                <i data-lucide="handshake" style="color:#22c55e;"></i>
+                <h3><%= assigned.length %></h3>
+                <p>Active assignments</p>
+            </article>
+            <article class="stat-card tp-stat">
+                <i data-lucide="hard-hat" style="color:#38bdf8;"></i>
+                <h3><%= uniqueContractors %></h3>
+                <p>Contractors engaged</p>
+            </article>
+            <article class="stat-card tp-stat">
+                <i data-lucide="radio" style="color:#a855f7;"></i>
+                <h3><%= assigned.length %></h3>
+                <p>From live board</p>
+            </article>
+        </div>
+
+        <% if (!assigned.length) { %>
+        <section class="tp-empty">
+            <div class="tp-empty-glow" aria-hidden="true"></div>
+            <div class="tp-empty-icon"><i data-lucide="handshake"></i></div>
+            <p class="tp-empty-kicker">Assignment desk</p>
+            <h3>No assignments yet</h3>
+            <p class="tp-empty-copy">Once a live tender is awarded to a contractor, the match will appear in this table.</p>
+            <div class="tp-empty-actions">
+                <a href="/tender-admin/publish" class="tp-btn tp-btn-primary"><i data-lucide="radio"></i> View live tenders</a>
+                <a href="/tender-admin" class="tp-btn"><i data-lucide="layout-dashboard"></i> Overview</a>
+            </div>
+        </section>
+        <% } else { %>
+        <div class="tp-panel">
+            <div class="tp-toolbar">
+                <div class="tp-search">
+                    <i data-lucide="search"></i>
+                    <input id="assignedSearch" type="search" placeholder="Search tender, owner, contractor...">
+                </div>
+                <span class="tp-count" id="assignedCount"><%= assigned.length %> records</span>
+            </div>
+            <div class="tp-table-wrap">
+                <table id="assignedTable" class="tp-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Contractor</th>
+                            <th>Project</th>
+                            <th>Estimated cost</th>
+                            <th>Assigned</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% assigned.forEach(function (t, i) {
+                            var assignedAt = t.assigned_at ? new Date(t.assigned_at).toLocaleString('en-IN') : '—';
+                            var hay = [t.tender_id, t.owner_name, t.owner_email, t.contractor_name, t.contractor_email, t.contractor_mobile, t.constructionCode, t.plotLocation].join(' ').toLowerCase();
+                        %>
+                        <tr data-search="<%= hay %>">
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="tp-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="tp-sub"><%= safe(t.owner_email) %></div>
+                                <div class="tp-sub"><%= safe(t.owner_mobile) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.contractor_name) %></strong>
+                                <div class="tp-sub"><%= safe(t.contractor_email) %></div>
+                                <div class="tp-sub"><%= safe(t.contractor_mobile) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.bhk) %> · <%= safe(t.floors) %> fl</strong>
+                                <div class="tp-sub"><%= safe(t.plotLocation) %></div>
+                            </td>
+                            <td><span class="tp-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><%= assignedAt %></td>
+                            <td><span class="tp-pill is-ok"><%= safe(t.tender_status) === '—' ? 'Assigned' : t.tender_status %></span></td>
+                            <td>
+                                <div class="tp-actions">
+                                    <a class="tp-btn" href="/tender-admin/pending/view/<%= t.tender_id %>"><i data-lucide="eye"></i> View</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<style>
+.tp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.25rem}
+.tp-stat{margin:0}
+.tp-empty{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;padding:3.25rem 2rem;border-radius:18px;border:1px solid rgba(168,85,247,.2);background:radial-gradient(circle at top,rgba(34,197,94,.1),transparent 42%),rgba(15,23,42,.62)}
+.tp-empty-glow{position:absolute;inset:auto -20% -40% auto;width:280px;height:280px;background:radial-gradient(circle,rgba(168,85,247,.16),transparent 70%);pointer-events:none}
+.tp-empty-icon{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+.tp-empty-icon i{width:34px;height:34px}
+.tp-empty-kicker{margin:0 0 .4rem;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#4ade80}
+.tp-empty h3{margin:0 0 .55rem;font-family:'Outfit',sans-serif;font-size:1.65rem;color:#fff}
+.tp-empty-copy{max-width:460px;margin:0;color:var(--text-muted);line-height:1.6}
+.tp-empty-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.65rem;margin-top:1.35rem}
+.tp-panel{background:rgba(15,23,42,.55);border:1px solid var(--surface-border);border-radius:16px;overflow:hidden}
+.tp-toolbar{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;padding:1rem 1.1rem;border-bottom:1px solid var(--surface-border);background:rgba(2,6,23,.28)}
+.tp-search{position:relative;flex:1 1 260px;min-width:200px}
+.tp-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted)}
+.tp-search input{width:100%;padding:.7rem .85rem .7rem 2.4rem;border-radius:10px;background:rgba(15,23,42,.75);border:1px solid var(--surface-border);color:#fff;font:inherit;font-size:.9rem;outline:none}
+.tp-search input:focus{border-color:rgba(168,85,247,.55)}
+.tp-count{margin-left:auto;font-size:.78rem;color:var(--text-muted)}
+.tp-table-wrap{overflow-x:auto}
+.tp-table{width:100%;border-collapse:collapse;min-width:980px}
+.tp-table th,.tp-table td{padding:.9rem .95rem;text-align:left;border-bottom:1px solid var(--surface-border);vertical-align:middle;font-size:.86rem}
+.tp-table thead th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);background:rgba(255,255,255,.03)}
+.tp-table tbody tr:hover td{background:rgba(34,197,94,.05)}
+.tp-sub{margin-top:.18rem;font-size:.78rem;color:var(--text-muted)}
+.tp-cost{color:#4ade80;font-weight:700}
+.tp-pill{display:inline-flex;padding:.22rem .65rem;border-radius:999px;font-size:.74rem;font-weight:700}
+.tp-pill.is-ok{color:#4ade80;background:rgba(34,197,94,.12)}
+.tp-actions{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tp-btn{display:inline-flex;align-items:center;gap:.3rem;height:32px;padding:0 .7rem;border-radius:8px;font:inherit;font-size:.75rem;font-weight:600;text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid var(--surface-border);background:rgba(255,255,255,.04);color:#e2e8f0}
+.tp-btn i{width:13px;height:13px}
+.tp-btn-primary{background:#a855f7;border-color:#a855f7;color:#fff}
+</style>
+
+<script src="/js/app.js"></script>
+<script>
+if (window.lucide) lucide.createIcons();
+(function () {
+    var search = document.getElementById('assignedSearch');
+    var table = document.getElementById('assignedTable');
+    var countEl = document.getElementById('assignedCount');
+    if (!table) return;
+    function apply() {
+        var q = (search && search.value ? search.value : '').trim().toLowerCase();
+        var shown = 0;
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            var match = !q || (row.getAttribute('data-search') || '').indexOf(q) !== -1;
+            row.style.display = match ? '' : 'none';
+            if (match) shown += 1;
+        });
+        if (countEl) countEl.textContent = shown + ' record' + (shown === 1 ? '' : 's');
+    }
+    if (search) search.addEventListener('input', apply);
+})();
+</script>

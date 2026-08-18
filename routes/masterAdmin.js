@@ -1,6 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const exe = require('../config/connection');
+const {
+    ROLES,
+    STAFF_ROLES,
+    STAFF_ROLE_DB,
+    hashPassword,
+    passwordsMatch,
+    normalizeAuthRole,
+    signToken,
+    setAuthCookie,
+    dashboardForRole,
+    verifyToken,
+    requireRole
+} = require('../middleware/auth');
 
 function countBy(rows, key, value) {
     if (!Array.isArray(rows)) return 0;
@@ -17,19 +30,13 @@ function firstCount(rows) {
 var STAFF_ROLE_LABELS = {
     VerifyAdmin: 'Verify Admin',
     BudgetAdmin: 'Budget Admin',
-    MaterialsAdmin: 'Materials Admin'
+    MaterialsAdmin: 'Materials Admin',
+    TenderAdmin: 'Tender Admin'
 };
 
 function normalizeStaffRole(role) {
-    var map = {
-        'Verify Admin': 'VerifyAdmin',
-        'Budget Admin': 'BudgetAdmin',
-        'Materials Admin': 'MaterialsAdmin',
-        VerifyAdmin: 'VerifyAdmin',
-        BudgetAdmin: 'BudgetAdmin',
-        MaterialsAdmin: 'MaterialsAdmin'
-    };
-    return map[role] || role;
+    var mapped = normalizeAuthRole(role);
+    return STAFF_ROLE_DB[mapped] || role;
 }
 
 function formatStaffRole(role) {
@@ -64,7 +71,8 @@ async function getStaffById(staffId) {
     );
     if (!Array.isArray(rows) || !rows.length) return null;
     var member = mapStaffRows(rows)[0];
-    member.password = rows[0].staff_password || '';
+    member.password = '';
+    member.hasPassword = !!(rows[0].staff_password);
     return member;
 }
 
@@ -82,6 +90,93 @@ async function getStaffStats() {
     }
     return { total: total, activeCount: activeCount };
 }
+
+async function ensureStaffRoleEnum() {
+    try {
+        await exe(
+            `ALTER TABLE staff
+             MODIFY COLUMN staff_role
+             ENUM('VerifyAdmin','BudgetAdmin','MaterialsAdmin','TenderAdmin') NOT NULL`
+        );
+    } catch (e) {
+        console.error('staff_role ENUM ensure failed:', e.message);
+    }
+}
+
+router.get('/login', (req, res) => {
+    res.render('login', {
+        error: req.query.error || '',
+        notice: req.query.notice || '',
+        loginEndpoint: '/master-admin/login'
+    });
+});
+
+router.post('/login', async (req, res) => {
+    try {
+        var email = String((req.body && req.body.email) || '').trim();
+        var password = String((req.body && req.body.password) || '');
+        if (!email || !password) {
+            return res.json({ success: false, message: 'Email and password are required.' });
+        }
+
+        var adminRows = await exe(
+            `SELECT * FROM users
+             WHERE (email = ? OR mobile = ?) AND role = 'admin'
+             LIMIT 1`,
+            [email, email]
+        );
+        if (Array.isArray(adminRows) && adminRows[0] && passwordsMatch(password, adminRows[0].password_hash)) {
+            var admin = adminRows[0];
+            var adminToken = signToken({
+                user_id: admin.user_id,
+                email: admin.email,
+                role: ROLES.ADMIN,
+                kind: 'user'
+            });
+            setAuthCookie(res, adminToken);
+            return res.json({
+                success: true,
+                role: ROLES.ADMIN,
+                redirect: dashboardForRole(ROLES.ADMIN)
+            });
+        }
+
+        await ensureStaffRoleEnum();
+        var staffRows = await exe(
+            `SELECT * FROM staff
+             WHERE (staff_email = ? OR staff_mobile = ?)
+             LIMIT 1`,
+            [email, email]
+        );
+        if (!Array.isArray(staffRows) || !staffRows[0] || !passwordsMatch(password, staffRows[0].staff_password)) {
+            return res.json({ success: false, message: 'Invalid admin credentials.' });
+        }
+
+        var staff = staffRows[0];
+        if (String(staff.staff_status || '').toLowerCase() !== 'active') {
+            return res.json({ success: false, message: 'This staff account is inactive.' });
+        }
+
+        var staffRole = normalizeAuthRole(staff.staff_role);
+        var staffToken = signToken({
+            staff_id: staff.staff_id,
+            email: staff.staff_email,
+            role: staffRole,
+            kind: 'staff'
+        });
+        setAuthCookie(res, staffToken);
+        return res.json({
+            success: true,
+            role: staffRole,
+            redirect: dashboardForRole(staffRole)
+        });
+    } catch (err) {
+        console.error(err);
+        return res.json({ success: false, message: 'Admin login failed.' });
+    }
+});
+
+router.use(verifyToken, requireRole(ROLES.ADMIN));
 
 router.get('/', async (req, res) => {
     try {
@@ -162,17 +257,23 @@ router.post('/staff-management/hire-employee', async (req, res) => {
         var staffMobile = (req.body.staffMobile || '').trim();
         var staffRole = normalizeStaffRole(req.body.staffRole);
         var staffPassword = (req.body.staffPassword || '').trim() || generateStaffPassword();
+        var storedPassword = hashPassword(staffPassword);
 
         if (!staffName || !staffEmail || !staffRole) {
             return res.redirect('/master-admin/staff-management/hire-employee?error=missing');
         }
 
+        await ensureStaffRoleEnum();
         await exe(
             `INSERT INTO staff (staff_name, staff_email, staff_mobile, staff_role, staff_password)
              VALUES (?, ?, ?, ?, ?)`,
-            [staffName, staffEmail, staffMobile || null, staffRole, staffPassword]
+            [staffName, staffEmail, staffMobile || null, staffRole, storedPassword]
         );
-        res.redirect('/master-admin/staff-management/employee-list');
+        res.redirect(
+            '/master-admin/staff-management/employee-list?notice=hired&name=' +
+            encodeURIComponent(staffName) +
+            '&code=' + encodeURIComponent(staffPassword)
+        );
     } catch (err) {
         console.error(err);
         res.redirect('/master-admin/staff-management/hire-employee?error=save');
@@ -230,7 +331,7 @@ router.post('/staff-management/employee-list/reset', async (req, res) => {
         var newPassword = generateStaffPassword();
         await exe(
             `UPDATE staff SET staff_password = ? WHERE staff_id = ?`,
-            [newPassword, staffId]
+            [hashPassword(newPassword), staffId]
         );
 
         var name = encodeURIComponent(member.staff_name || 'Staff');
@@ -332,7 +433,7 @@ router.post('/staff-management/employee-list/edit/:id', async (req, res) => {
                 `UPDATE staff
                  SET staff_name = ?, staff_email = ?, staff_mobile = ?, staff_role = ?, staff_status = ?, staff_password = ?
                  WHERE staff_id = ?`,
-                [staffName, staffEmail, staffMobile || null, staffRole, staffStatus, staffPassword, staffId]
+                [staffName, staffEmail, staffMobile || null, staffRole, staffStatus, hashPassword(staffPassword), staffId]
             );
         } else {
             await exe(

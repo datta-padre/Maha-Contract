@@ -1,59 +1,87 @@
 <%- include('../partials/header') %>
+<%
+    var fd = (typeof formData !== 'undefined' && formData) ? formData : {};
+    function val(key) {
+        return (fd[key] === undefined || fd[key] === null) ? '' : fd[key];
+    }
+%>
 <div class="background-animation"></div>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-            <nav class="sidebar-nav">
-                <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
-                <a href="/houseowner/post" class="active"><i data-lucide="file-plus"></i> Post Tender Details</a>
-                <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
-                <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
-                <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
-                <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
-                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+        <nav class="sidebar-nav">
+            <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
+            <a href="/houseowner/post" class="active"><i data-lucide="file-plus"></i> Post Tender Details</a>
+            <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
+            <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
+            <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
+            <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
+            <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+        </nav>
+    </aside>
 
-        <main class="dashboard-content">
-            <header class="dashboard-header">
-                <div>
-                    <div class="progress-pill"><i data-lucide="sparkles"></i> Guided tender builder</div>
-                    <h2>House Requirements Blueprint</h2>
-                    <p>Submit your exact property specifications to generate an accurate architectural tender.</p>
-                </div>
-                <div class="header-highlight">
-                    <span>Step 1</span>
-                    <strong>Capture project details</strong>
-                </div>
-            </header>
-
-            <div class="progress-card">
-                <div class="progress-card-content">
-                    <div>
-                        <p class="progress-label">Project readiness</p>
-                        <h3>Build a clear, competitive tender</h3>
-                    </div>
-                    <div class="progress-steps">
-                        <span class="progress-step active">Requirements</span>
-                        <span class="progress-step">Documents</span>
-                        <span class="progress-step">Submit</span>
-                    </div>
-                </div>
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <div class="progress-pill"><i data-lucide="sparkles"></i> Guided tender builder</div>
+                <h2>House Requirements Blueprint</h2>
+                <p>Complete three steps to generate an accurate architectural tender.</p>
             </div>
+            <div class="header-highlight">
+                <span id="stepBadge">Step 1 of 3</span>
+                <strong id="stepTitle">Requirements</strong>
+            </div>
+        </header>
 
-            <% if (typeof success !== 'undefined' && success) { %>
-                <div class="info-note" style="margin-bottom: 1.25rem; border-left: 4px solid var(--primary);">
-                    <p><i data-lucide="check-circle"></i> <strong>Tender request received.</strong> Your details have been captured and will be reviewed by the platform team.</p>
+        <% if (typeof success !== 'undefined' && success) { %>
+        <div class="info-note" style="margin-bottom: 1.25rem; border-left: 4px solid var(--primary);">
+            <p><i data-lucide="check-circle"></i> <strong>Tender request received.</strong> Your details have been captured and will be reviewed by the platform team.</p>
+        </div>
+        <% } %>
+
+        <nav class="ho-stepper" aria-label="Tender steps">
+            <button type="button" class="ho-step is-active" data-goto="1">
+                <span class="ho-step-num">1</span>
+                <span>
+                    <strong>Requirements</strong>
+                    <small>Plot, scope &amp; budget</small>
+                </span>
+            </button>
+            <span class="ho-step-line"></span>
+            <button type="button" class="ho-step" data-goto="2">
+                <span class="ho-step-num">2</span>
+                <span>
+                    <strong>Documents</strong>
+                    <small>Plans, proof &amp; signature</small>
+                </span>
+            </button>
+            <span class="ho-step-line"></span>
+            <button type="button" class="ho-step" data-goto="3">
+                <span class="ho-step-num">3</span>
+                <span>
+                    <strong>Submit</strong>
+                    <small>Review &amp; pay fee</small>
+                </span>
+            </button>
+        </nav>
+
+        <form id="tender-form" action="/houseowner/save-tender" method="post" enctype="multipart/form-data" class="tender-form ho-wizard">
+
+            <!-- STEP 1: Requirements -->
+            <section class="ho-panel is-visible" data-step="1">
+                <div class="ho-panel-head">
+                    <div class="ho-panel-icon"><i data-lucide="clipboard-list"></i></div>
+                    <div>
+                        <h3>Project requirements</h3>
+                        <p>Land, construction scope, and financial parameters.</p>
+                    </div>
                 </div>
-            <% } %>
 
-            <form id="tender-form" action="/houseowner/save-tender" method="post" enctype="multipart/form-data" class="tender-form">
-                <!-- 1. Physical Plot Details -->
-                <h3 class="form-section-title"><i data-lucide="map" style="display:inline; width:20px;"></i> 1. Land & Geological Inputs</h3>
+                <h4 class="form-section-title"><i data-lucide="map"></i> Land &amp; location</h4>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Plot Area (Sq.m / Sq.ft / Guntha)</label>
-                        <input type="text" id="prop-area" name="plotArea" placeholder="e.g. 1500 Sq.ft" value="<%= (typeof formData !== 'undefined' && formData.plotArea) ? formData.plotArea : '' %>" required>
+                        <input type="text" id="prop-area" name="plotArea" placeholder="e.g. 1500 Sq.ft" value="<%= val('plotArea') %>" required>
                     </div>
                     <div class="form-group">
                         <label>Type of Soil</label>
@@ -67,23 +95,42 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-row ho-loc-row">
+                    <div class="form-group">
+                        <label>Plot State</label>
+                        <input type="text" name="state" placeholder="e.g. Maharashtra" value="<%= val('state') %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Plot District</label>
+                        <input type="text" name="district" placeholder="e.g. Amravati" value="<%= val('district') %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Plot Taluka</label>
+                        <input type="text" name="taluka" placeholder="e.g. Khamgaon" value="<%= val('taluka') %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Plot Village</label>
+                        <input type="text" name="village" placeholder="e.g. Khamgaon" value="<%= val('village') %>" required>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Plot Location (Google Maps Pin Link)</label>
-                        <input type="url" name="plotLocation" placeholder="https://maps.google.com/..." value="<%= (typeof formData !== 'undefined' && formData.plotLocation) ? formData.plotLocation : '' %>" required>
+                        <label>Plot Pincode</label>
+                        <input type="text" name="pincode" placeholder="e.g. 444601" value="<%= val('pincode') %>" required>
                     </div>
+                    <div class="form-group">
+                        <label>Plot Location Google Maps Link</label>
+                        <input type="text" name="plotLocation" placeholder="e.g. https://www.google.com/maps/place/19.246848,77.361278" value="<%= val('plotLocation') %>">
+                    </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>Type of Construction Code</label>
                         <select class="custom-select" name="constructionCode" required>
-                            <option value="RCC">RCC Structure (Pillars & Beams)</option>
+                            <option value="RCC">RCC Structure (Pillars &amp; Beams)</option>
                             <option value="LoadBearing">Load Bearing Structure (Brick Walls)</option>
                         </select>
                     </div>
-                </div>
-
-                <!-- 2. Logistics & Architectural Data -->
-                <h3 class="form-section-title"><i data-lucide="folder-open" style="display:inline; width:20px;"></i> 2. Blueprints & Materials</h3>
-                <div class="form-row">
                     <div class="form-group">
                         <label>Will you personally provide construction materials?</label>
                         <select class="custom-select" name="materialsProvided" required>
@@ -91,6 +138,8 @@
                             <option value="yes">Yes, I will procure my own materials</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>Do you have a finalized House Plan?</label>
                         <select class="custom-select" name="finalizedPlan" id="finalizedPlan" required>
@@ -98,55 +147,36 @@
                             <option value="yes">Yes, I have CAD/PDF architectural plans</option>
                         </select>
                     </div>
-                </div>
-
-                <!-- Interactive Upload Nodes -->
-                <div id="plan-upload" class="form-group" style="display:none; margin-bottom: 1.5rem;">
-                    <label>Upload Architectural Plan (.PDF / .DWG) <span style="color:var(--primary);">*</span></label>
-                    <div class="upload-zone" style="padding: 1.5rem; cursor: pointer;" onclick="this.querySelector('input').click()">
-                        <input type="file" name="architecturalPlan" accept=".pdf,.dwg" style="display:none;" onchange="this.closest('.upload-zone').querySelector('.file-label').textContent = 'Attached: ' + this.files[0].name; this.closest('.upload-zone').style.borderColor = '#22c55e';">
-                        <i data-lucide="upload-cloud"></i>
-                        <p class="file-label">Drag & Drop your CAD/PDF here or click to browse.</p>
+                    <div class="form-group">
+                        <label>Required BHK Configuration</label>
+                        <select id="prop-bhk" class="custom-select" name="bhk">
+                            <option>1 BHK</option>
+                            <option>2 BHK</option>
+                            <option selected>3 BHK</option>
+                            <option>4+ BHK / Villa</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label>Upload Official Plot Documents (7/12, Ownership Proof)</label>
-                    <div class="upload-zone" style="padding: 1.5rem; cursor: pointer;" onclick="this.querySelector('input').click()">
-                        <input type="file" name="Plot_documents" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none;" onchange="this.closest('.upload-zone').querySelector('.file-label').textContent = this.files.length + ' file(s) selected: ' + Array.from(this.files).map(f => f.name).join(', '); this.closest('.upload-zone').style.borderColor = '#22c55e';">
-                        <i data-lucide="file-badge"></i>
-                        <p class="file-label">Upload property ownership files to pass Verify Admin check.</p>
-                    </div>
-                </div>
-
-                <!-- 3. Granular Construction Requirements -->
-                <h3 class="form-section-title">
-                    <i data-lucide="hammer" style="display:inline; width:20px;"></i>
-                    3. Ancillary Construction Requirements
-                </h3>
-                
+                <h4 class="form-section-title"><i data-lucide="hammer"></i> Ancillary construction</h4>
                 <div class="checkbox-grid">
                     <label class="checkbox-group">
                         <input type="checkbox" name="ancillary_requirements" value="Interior & Furniture Work">
-                        <span>Interior & Furniture Work</span>
+                        <span>Interior &amp; Furniture Work</span>
                     </label>
-                
                     <label class="checkbox-group">
                         <input type="checkbox" name="ancillary_requirements" value="Electrical Wiring & Fitting">
-                        <span>Electrical Wiring & Fitting</span>
+                        <span>Electrical Wiring &amp; Fitting</span>
                     </label>
-                
                     <label class="checkbox-group">
                         <input type="checkbox" name="ancillary_requirements" value="Colouring & Painting">
-                        <span>Colouring & Painting</span>
+                        <span>Colouring &amp; Painting</span>
                     </label>
-                
                     <label class="checkbox-group">
                         <input type="checkbox" name="ancillary_requirements" value="Plumbing & Layout Pipes">
-                        <span>Plumbing & Layout Pipes</span>
+                        <span>Plumbing &amp; Layout Pipes</span>
                     </label>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>External Works Required?</label>
@@ -168,127 +198,479 @@
                     </div>
                 </div>
 
-                <!-- 4. Budget & Financial Anchors -->
-                <h3 class="form-section-title"><i data-lucide="banknote" style="display:inline; width:20px;"></i> 4. Financial Parameters & Scope</h3>
+                <h4 class="form-section-title"><i data-lucide="banknote"></i> Budget &amp; timeline</h4>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Maximum Out-of-Pocket Budget (₹)</label>
-                        <input type="number" name="budget" placeholder="e.g. 5000000" value="<%= (typeof formData !== 'undefined' && formData.budget) ? formData.budget : '' %>" style="font-family: monospace; font-size: 1.1rem; letter-spacing: 1px;" required>
+                        <input type="number" name="budget" placeholder="e.g. 5000000" value="<%= val('budget') %>" required>
                     </div>
-                    <div class="form-group">
-                        <label>Required BHK Configuration</label>
-                        <select id="prop-bhk" class="custom-select" name="bhk">
-                            <option>1 BHK</option>
-                            <option>2 BHK</option>
-                            <option selected>3 BHK</option>
-                            <option>4+ BHK / Villa</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group">
                         <label>Number of Floors (G + X)</label>
-                        <input type="number" name="floors" placeholder="e.g. Target: 2 Floors" value="<%= (typeof formData !== 'undefined' && formData.floors) ? formData.floors : '' %>" min="1" required>
+                        <input type="number" name="floors" placeholder="e.g. 2" value="<%= val('floors') %>" min="1" required>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>Expected Time of Construction (Months)</label>
-                        <input type="number" name="constructionTime" placeholder="e.g. 12" value="<%= (typeof formData !== 'undefined' && formData.constructionTime) ? formData.constructionTime : '' %>" min="1" style="width: 100%; padding: 0.75rem 1rem; background: transparent; border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-family: inherit; font-size: 1rem;" required>
+                        <input type="number" name="constructionTime" placeholder="e.g. 12" value="<%= val('constructionTime') %>" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Special Instructions / Custom Notes</label>
+                        <textarea class="custom-select" name="specialInstructions" rows="3" placeholder="e.g. Prefer Ambuja Cement or premium tiles."><%= val('specialInstructions') %></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 2: Documents -->
+            <section class="ho-panel" data-step="2">
+                <div class="ho-panel-head">
+                    <div class="ho-panel-icon"><i data-lucide="folder-open"></i></div>
+                    <div>
+                        <h3>Supporting documents</h3>
+                        <p>Upload plans, ownership proof, and your digital signature.</p>
                     </div>
                 </div>
 
-                <div class="form-group mt-4">
-                    <label>Special Instructions / Custom Notes for Builders</label>
-                    <textarea class="custom-select" name="specialInstructions" rows="4" placeholder="Enter any extra details or specific material choices (e.g. specifically prefer Ambuja Cement or premium tile requirements)."><%= (typeof formData !== 'undefined' && formData.specialInstructions) ? formData.specialInstructions : '' %></textarea>
-                </div>
-
-                <!-- 5. Legal Authentication -->
-                <h3 class="form-section-title"><i data-lucide="pen-tool" style="display:inline; width:20px;"></i> 5. Digital Signature Authorization</h3>
-                <div class="form-group" style="margin-bottom: 2rem;">
-                    <label>House Owner Digital Signature (Upload PNG/JPG) <span style="color:var(--primary);">*</span></label>
-                    <div class="upload-zone" style="padding: 1.5rem; text-align: center; border: 1px dashed var(--surface-border); border-radius: 12px; cursor: pointer;" onclick="this.querySelector('input').click()">
-                        <input type="file" name="House_Owner_Digital_Signature" accept=".png,.jpg,.jpeg" required style="display:none;" onchange="this.closest('.upload-zone').querySelector('.file-label').textContent = 'Attached: ' + this.files[0].name; this.closest('.upload-zone').style.borderColor = '#22c55e';">
-                        <i data-lucide="pen-tool" style="width: 32px; height: 32px; color: var(--text-muted); margin-bottom: 0.5rem; display: inline-block;"></i>
-                        <p class="file-label" style="color: var(--text-muted);">Click to upload your official digital signature for binding the tender.</p>
+                <div id="plan-upload" class="form-group ho-upload-block" style="display:none;">
+                    <label>Upload Architectural Plan (.PDF / .DWG) <span class="ho-req">*</span></label>
+                    <div class="upload-zone" onclick="this.querySelector('input').click()">
+                        <input type="file" name="architecturalPlan" accept=".pdf,.dwg" style="display:none;" onchange="markFile(this)">
+                        <i data-lucide="upload-cloud"></i>
+                        <p class="file-label">Drop CAD/PDF here or click to browse.</p>
                     </div>
                 </div>
 
-                <!-- Submit / Pay Button -->
+                <div class="form-group ho-upload-block">
+                    <label>Upload Official Plot Documents (7/12, Ownership Proof)</label>
+                    <div class="upload-zone" onclick="this.querySelector('input').click()">
+                        <input type="file" name="Plot_documents" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none;" onchange="markFile(this, true)">
+                        <i data-lucide="file-badge"></i>
+                        <p class="file-label">Upload property ownership files for Verify Admin.</p>
+                    </div>
+                </div>
+
+                <div class="form-group ho-upload-block">
+                    <label>House Owner Digital Signature (PNG/JPG) <span class="ho-req">*</span></label>
+                    <div class="upload-zone" onclick="this.querySelector('input').click()">
+                        <input type="file" name="House_Owner_Digital_Signature" accept=".png,.jpg,.jpeg" required style="display:none;" onchange="markFile(this)">
+                        <i data-lucide="pen-tool"></i>
+                        <p class="file-label">Upload your official signature to bind the tender.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: Submit -->
+            <section class="ho-panel" data-step="3">
+                <div class="ho-panel-head">
+                    <div class="ho-panel-icon"><i data-lucide="send"></i></div>
+                    <div>
+                        <h3>Review &amp; submit</h3>
+                        <p>Confirm the brief, then pay the mapping fee to generate the tender.</p>
+                    </div>
+                </div>
+
+                <div class="ho-review" id="reviewGrid">
+                    <div class="ho-review-card"><span>Plot area</span><strong id="rv-area">—</strong></div>
+                    <div class="ho-review-card"><span>Location</span><strong id="rv-loc">—</strong></div>
+                    <div class="ho-review-card"><span>BHK / Floors</span><strong id="rv-bhk">—</strong></div>
+                    <div class="ho-review-card"><span>Budget</span><strong id="rv-budget">—</strong></div>
+                    <div class="ho-review-card"><span>Construction</span><strong id="rv-code">—</strong></div>
+                    <div class="ho-review-card"><span>Timeline</span><strong id="rv-time">—</strong></div>
+                </div>
+
                 <div class="info-note">
                     <p><i data-lucide="info"></i> <strong>Note:</strong> A standard platform mapping fee is required to convert your blueprint into a legally bound tender code.</p>
                 </div>
-                <button type="button" onclick="payNow()" class="btn-primary full-width large hero-cta">
+                <button type="button" onclick="payNow()" class="btn-primary full-width large hero-cta ho-pay-btn">
                     <i data-lucide="send"></i> Generate Technical Tender File (Pay ₹5,999 Fee)
                 </button>
+            </section>
 
-                <!-- hidden payment fields (filled after Razorpay success) -->
-                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-                <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
-                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
-            </form>
+            <div class="ho-nav">
+                <button type="button" id="btnBack" class="ho-nav-btn" hidden>
+                    <i data-lucide="arrow-left"></i> Back
+                </button>
+                <div class="ho-nav-spacer"></div>
+                <button type="button" id="btnNext" class="ho-nav-btn ho-nav-btn-primary">
+                    Next <i data-lucide="arrow-right"></i>
+                </button>
+            </div>
 
-        </main>
-    </div>
+            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+            <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+            <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+        </form>
+    </main>
+</div>
 
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="/js/app.js"></script>
-    <script>
-        // Show / hide architectural plan upload
-        document.getElementById('finalizedPlan').addEventListener('change', function () {
-            var box = document.getElementById('plan-upload');
-            box.style.display = this.value === 'yes' ? 'block' : 'none';
-        });
+<style>
+.ho-stepper,
+.ho-wizard {
+    color: var(--text-main);
+    border: 1px solid var(--surface-border);
+    background: var(--glass-bg);
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.22);
+}
+.ho-stepper {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding: 0.85rem;
+    border-radius: 16px;
+}
+.ho-step {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--text-main);
+    text-align: left;
+    cursor: pointer;
+    border-radius: 12px;
+    font: inherit;
+}
+.ho-step strong { display: block; font-size: 0.92rem; color: var(--text-main); }
+.ho-step small { display: block; margin-top: 0.12rem; color: var(--text-muted); font-size: 0.75rem; }
+.ho-step-num {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--text-muted);
+}
+.ho-step.is-active {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.ho-step.is-active .ho-step-num {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+.ho-step.is-done .ho-step-num {
+    background: rgba(34,197,94,0.16);
+    border-color: rgba(34,197,94,0.4);
+    color: #16a34a;
+}
+.ho-step-line {
+    height: 2px;
+    background: var(--surface-border);
+    min-width: 18px;
+}
+.ho-wizard {
+    border-radius: 18px;
+    padding: 1.35rem 1.4rem 1.15rem;
+}
+.ho-panel { display: none; }
+.ho-panel.is-visible { display: block; }
+.ho-panel-head {
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surface-border);
+}
+.ho-panel-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 32%, transparent);
+    color: var(--primary);
+}
+.ho-panel-icon i { width: 22px; height: 22px; }
+.ho-panel-head h3 {
+    margin: 0 0 0.2rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.2rem;
+    color: var(--text-main);
+}
+.ho-panel-head p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+.ho-wizard .form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 1.1rem 0 0.85rem;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+.ho-wizard .form-section-title i { width: 18px; height: 18px; color: var(--primary); }
+.ho-loc-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+.ho-wizard .form-group input,
+.ho-wizard .form-group select,
+.ho-wizard .form-group textarea {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--text-main);
+}
+.ho-wizard .form-group input:focus,
+.ho-wizard .form-group select:focus,
+.ho-wizard .form-group textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.ho-wizard .checkbox-group {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--text-main);
+}
+.ho-wizard .upload-zone {
+    background: var(--surface);
+    border-color: var(--surface-border);
+    color: var(--text-muted);
+}
+.ho-req { color: var(--primary); }
+.ho-upload-block { margin-bottom: 1.15rem; }
+.ho-review {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.15rem;
+}
+.ho-review-card {
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+}
+.ho-review-card span {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+}
+.ho-review-card strong { font-size: 0.95rem; word-break: break-word; color: var(--text-main); }
+.ho-pay-btn { margin-top: 0.35rem; }
+.ho-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--surface-border);
+}
+.ho-nav-spacer { flex: 1; }
+.ho-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 42px;
+    padding: 0 1.1rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--text-main);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ho-nav-btn i { width: 16px; height: 16px; }
+.ho-nav-btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+.light-theme .ho-stepper,
+.light-theme .ho-wizard {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+.light-theme .ho-step.is-active {
+    background: #fff7ed;
+}
+.light-theme .ho-step.is-done .ho-step-num {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #15803d;
+}
+.light-theme .ho-wizard .form-group input,
+.light-theme .ho-wizard .form-group select,
+.light-theme .ho-wizard .form-group textarea,
+.light-theme .ho-wizard .checkbox-group,
+.light-theme .ho-review-card,
+.light-theme .ho-nav-btn {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+.light-theme .ho-wizard .upload-zone {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+.light-theme .ho-panel-icon {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #ea580c;
+}
+@media (max-width: 900px) {
+    .ho-stepper { grid-template-columns: 1fr; }
+    .ho-step-line { display: none; }
+    .ho-loc-row { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 560px) {
+    .ho-loc-row { grid-template-columns: 1fr !important; }
+}
+</style>
 
-        // Pay Now → create order → open Razorpay → save tender
-        async function payNow() {
-            var form = document.getElementById('tender-form');
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/app.js"></script>
+<script>
+    var currentStep = 1;
+    var titles = ['Requirements', 'Documents', 'Submit'];
+    var form = document.getElementById('tender-form');
+    var btnNext = document.getElementById('btnNext');
+    var btnBack = document.getElementById('btnBack');
 
-            // check required form fields first
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            // 1) create order on server
-            var orderRes = await fetch('/houseowner/create-order', { method: 'POST' });
-            var orderData = await orderRes.json();
-
-            if (!orderData.success) {
-                alert(orderData.message || 'Could not start payment. Form kept as is.');
-                return;
-            }
-
-            // 2) open Razorpay checkout
-            var options = {
-                key: orderData.key,
-                amount: orderData.amount,
-                currency: orderData.currency,
-                name: 'BuildTender',
-                description: 'Tender Platform Mapping Fee',
-                order_id: orderData.order_id,
-                prefill: {
-                    name: 'House Owner',
-                    email: 'owner@example.com',
-                    contact: '9999999999'
-                },
-                theme: {
-                    color: '#ff7a00'
-                },
-                // 3) after payment success → submit form to save-tender
-                handler: function (response) {
-                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
-                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
-                    form.submit();
-                }
-            };
-
-            var rzp = new Razorpay(options);
-
-            rzp.on('payment.failed', function () {
-                alert('Payment failed. Tender was not saved. Your form data is still here.');
-            });
-
-            rzp.open();
+    function markFile(input, many) {
+        var zone = input.closest('.upload-zone');
+        var label = zone.querySelector('.file-label');
+        if (!input.files || !input.files.length) return;
+        if (many) {
+            label.textContent = input.files.length + ' file(s): ' + Array.from(input.files).map(function (f) { return f.name; }).join(', ');
+        } else {
+            label.textContent = 'Attached: ' + input.files[0].name;
         }
-    </script>
+        zone.style.borderColor = '#22c55e';
+        zone.classList.add('has-file');
+    }
+
+    function syncPlanUpload() {
+        var plan = document.getElementById('finalizedPlan');
+        var box = document.getElementById('plan-upload');
+        var show = plan && plan.value === 'yes';
+        box.style.display = show ? 'block' : 'none';
+        var file = box.querySelector('input[type="file"]');
+        if (file) file.required = show;
+    }
+
+    function locationValue() {
+        var names = ['state', 'district', 'taluka', 'village'];
+        return names.map(function (n) {
+            var el = form.querySelector('[name="' + n + '"]');
+            return el ? String(el.value || '').trim() : '';
+        }).filter(Boolean).join(', ');
+    }
+
+    function fillReview() {
+        document.getElementById('rv-area').textContent = form.plotArea.value || '—';
+        document.getElementById('rv-loc').textContent = locationValue() || '—';
+        document.getElementById('rv-bhk').textContent = (form.bhk.value || '—') + ' · ' + (form.floors.value || '—') + ' fl';
+        var budget = Number(form.budget.value);
+        document.getElementById('rv-budget').textContent = isNaN(budget) || !form.budget.value
+            ? '—'
+            : '₹' + budget.toLocaleString('en-IN');
+        document.getElementById('rv-code').textContent = form.constructionCode.value || '—';
+        document.getElementById('rv-time').textContent = form.constructionTime.value
+            ? form.constructionTime.value + ' months'
+            : '—';
+    }
+
+    function validateStep(step) {
+        var panel = form.querySelector('.ho-panel[data-step="' + step + '"]');
+        var fields = panel.querySelectorAll('input, select, textarea');
+        for (var i = 0; i < fields.length; i++) {
+            var el = fields[i];
+            if (!el.checkValidity()) {
+                el.reportValidity();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function showStep(step) {
+        currentStep = step;
+        form.querySelectorAll('.ho-panel').forEach(function (p) {
+            p.classList.toggle('is-visible', Number(p.getAttribute('data-step')) === step);
+        });
+        document.querySelectorAll('.ho-step').forEach(function (btn) {
+            var n = Number(btn.getAttribute('data-goto'));
+            btn.classList.toggle('is-active', n === step);
+            btn.classList.toggle('is-done', n < step);
+        });
+        document.getElementById('stepBadge').textContent = 'Step ' + step + ' of 3';
+        document.getElementById('stepTitle').textContent = titles[step - 1];
+        btnBack.hidden = step === 1;
+        btnNext.hidden = step === 3;
+        if (step === 3) fillReview();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    document.getElementById('finalizedPlan').addEventListener('change', syncPlanUpload);
+    btnNext.addEventListener('click', function () {
+        if (!validateStep(currentStep)) return;
+        showStep(Math.min(3, currentStep + 1));
+    });
+    btnBack.addEventListener('click', function () {
+        showStep(Math.max(1, currentStep - 1));
+    });
+    document.querySelectorAll('.ho-step').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = Number(btn.getAttribute('data-goto'));
+            if (target < currentStep) return showStep(target);
+            for (var s = currentStep; s < target; s++) {
+                if (!validateStep(s)) return;
+            }
+            showStep(target);
+        });
+    });
+
+    syncPlanUpload();
+    showStep(1);
+
+    async function payNow() {
+        if (!validateStep(1) || !validateStep(2)) {
+            showStep(!validateStep(1) ? 1 : 2);
+            return;
+        }
+        fillReview();
+
+        var orderRes = await fetch('/houseowner/create-order', { method: 'POST' });
+        var orderData = await orderRes.json();
+        if (!orderData.success) {
+            alert(orderData.message || 'Could not start payment. Form kept as is.');
+            return;
+        }
+
+        var options = {
+            key: orderData.key,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: 'BuildTender',
+            description: 'Tender Platform Mapping Fee',
+            order_id: orderData.order_id,
+            prefill: { name: 'House Owner', email: 'owner@example.com', contact: '9999999999' },
+            theme: { color: '#ff7a00' },
+            handler: function (response) {
+                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                form.submit();
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.on('payment.failed', function () {
+            alert('Payment failed. Tender was not saved. Your form data is still here.');
+        });
+        rzp.open();
+    }
+</script>

@@ -9,7 +9,7 @@
         <div class="nav-links">
             <a href="#how-it-works">How It Works</a>
             <a href="#verification-process">Verification Process</a>
-            <button class="btn-secondary" onclick="openModal('loginModal')">Login</button>
+            <button class="btn-secondary" type="button" onclick="openModal('loginModal')">Login</button>
             <button class="btn-primary" onclick="openModal('registerModal')">Sign Up</button>
         </div>
         <!-- Mobile Nav Toggle -->
@@ -227,7 +227,7 @@
                         <option value="houseowner">House Owner</option>
                         <option value="contractor">Contractor</option>
                         <option value="vendor">System Vendor</option>
-                        <option value="user">User</option>
+
                     </select>
                 </div>
 
@@ -293,8 +293,8 @@
         </div>
     </div>
 
-    <!-- <script src="/js/app.js"></script> -->
+    <script src="/js/app.js"></script>
     <script>
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     </script>
 <%- include('partials/footer') %>

@@ -32,12 +32,12 @@
             </a>
         </header>
 
-        <% if (typeof notice !== 'undefined' && notice === 'reset') { %>
+        <% if (typeof notice !== 'undefined' && (notice === 'reset' || notice === 'hired')) { %>
         <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
             <i data-lucide="key-round"></i>
             <div>
-                <strong>Passcode reset</strong>
-                <p>New passcode for <strong><%= noticeName %></strong>: <code style="color:#eab308;"><%= noticeCode %></code></p>
+                <strong><%= notice === 'hired' ? 'Employee hired' : 'Passcode reset' %></strong>
+                <p>Passcode for <strong><%= noticeName %></strong>: <code style="color:#eab308;"><%= noticeCode %></code> — share it once, then they sign in at Admin Login.</p>
             </div>
         </div>
         <% } else if (typeof notice !== 'undefined' && notice === 'fired') { %>
@@ -129,8 +129,8 @@
                     <option value="all">All roles</option>
                     <option value="Verify Admin">Verify Admin</option>
                     <option value="Budget Admin">Budget Admin</option>
+                    <option value="Tender Admin">Tender Admin</option>
                     <option value="Materials Admin">Materials Admin</option>
-                    <option value="Super Admin">Super Admin</option>
                 </select>
             </div>
 
