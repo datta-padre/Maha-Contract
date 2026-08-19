@@ -11,9 +11,9 @@
     }
     function payBadge(status) {
         var s = (status || 'pending').toLowerCase();
-        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
-        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
-        return { color: '#eab308', label: 'Pending' };
+        if (s === 'paid') return { color: '#22c55e', bg: 'rgba(34,197,94,0.12)', label: 'Paid' };
+        if (s === 'failed') return { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', label: 'Failed' };
+        return { color: '#eab308', bg: 'rgba(234,179,8,0.12)', label: 'Unpaid' };
     }
     function docUrl(file) {
         if (!file || !String(file).trim()) return '';
@@ -21,34 +21,46 @@
     }
     function kycDocs(u) {
         return [
-            { label: 'Photo', file: u.profile_picture },
-            { label: 'Signature', file: u.digital_signature },
-            { label: 'Qualification', file: u.qualifications },
-            { label: 'License', file: u.licenses },
-            { label: 'Aadhaar', file: u.adhar_card },
-            { label: 'PAN', file: u.pan_card },
-            { label: 'GST', file: u.gst_certificate },
-            { label: 'Income cert', file: u.insurance_certificate },
-            { label: 'NCL', file: u.non_crime_certificate },
-            { label: 'Police NOC', file: u.police_ncertificate },
-            { label: 'Portfolio', file: u.previous_work },
-            { label: 'Stamp', file: u.legal_agreement }
-        ].filter(function (d) { return d.file && String(d.file).trim(); });
+            { label: 'Photo', icon: 'camera', file: u.profile_picture },
+            { label: 'Signature', icon: 'pen-line', file: u.digital_signature },
+            { label: 'Qualification', icon: 'graduation-cap', file: u.qualifications },
+            { label: 'License', icon: 'badge-check', file: u.licenses },
+            { label: 'Aadhaar', icon: 'id-card', file: u.adhar_card },
+            { label: 'PAN', icon: 'credit-card', file: u.pan_card },
+            { label: 'GST', icon: 'receipt', file: u.gst_certificate },
+            { label: 'Income cert', icon: 'file-badge', file: u.insurance_certificate },
+            { label: 'NCL', icon: 'shield', file: u.non_crime_certificate },
+            { label: 'Police NOC', icon: 'shield-alert', file: u.police_ncertificate },
+            { label: 'Portfolio', icon: 'briefcase', file: u.previous_work },
+            { label: 'Stamp', icon: 'stamp', file: u.legal_agreement }
+        ].map(function (d) {
+            d.uploaded = !!(d.file && String(d.file).trim());
+            return d;
+        });
+    }
+    function uploadedCount(docs) {
+        var n = 0;
+        for (var i = 0; i < docs.length; i++) if (docs[i].uploaded) n++;
+        return n;
     }
 %>
 <div class="background-animation"></div>
-<div class="dashboard-layout">
+<div class="dashboard-layout kyc-desk">
     <%- include('./_sidebar') %>
 
     <main class="dashboard-content">
-        <header class="dashboard-header">
+        <header class="dashboard-header kyc-queue-header">
             <div>
+                <p class="kyc-kicker">Verify Admin</p>
                 <h2>Pending KYC Queue</h2>
-                <p style="color: var(--text-muted); margin-top: 0.35rem;">Open documents, then approve or reject each contractor.</p>
+                <p class="kyc-subtitle">Review contractor documents, then approve or reject each submission.</p>
             </div>
-            <div class="header-highlight">
-                <span>Pending</span>
-                <strong><%= pending.length %></strong>
+            <div class="kyc-queue-count">
+                <i data-lucide="inbox"></i>
+                <div>
+                    <span>In queue</span>
+                    <strong><%= pending.length %></strong>
+                </div>
             </div>
         </header>
 
@@ -59,89 +71,119 @@
         </div>
         <% } %>
 
-        <div style="margin-bottom: 1.5rem; position: relative;">
-            <i data-lucide="search" style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
-            <input type="text" id="searchInput" placeholder="Search by name, email, phone or KYC ID..."
-                   style="width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: 12px; background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); color: white; font-size: 1rem;">
+        <div class="kyc-toolbar">
+            <div class="kyc-search">
+                <i data-lucide="search"></i>
+                <input type="search" id="searchInput" placeholder="Search name, email, phone or KYC ID">
+            </div>
+            <div class="kyc-toolbar-links">
+                <a href="/verify-admin" class="kyc-ghost-link">
+                    <i data-lucide="layout-dashboard"></i> Overview
+                </a>
+                <a href="/verify-admin/verified" class="kyc-ghost-link">
+                    <i data-lucide="database"></i> Verified
+                </a>
+            </div>
         </div>
 
         <% if (pending.length === 0) { %>
-        <div class="empty-state">
-            <i data-lucide="check-circle" style="width: 48px; height: 48px; margin-bottom: 1rem; color: #22c55e;"></i>
-            <h3>Queue is Empty</h3>
-            <p>No contractors are awaiting document validation.</p>
-        </div>
+        <section class="kyc-empty-panel">
+            <div class="kyc-empty-icon">
+                <i data-lucide="check-circle-2"></i>
+            </div>
+            <h3>Queue is clear</h3>
+            <p>No contractors are waiting for document validation. New KYC submissions will appear here automatically.</p>
+            <div class="kyc-empty-actions">
+                <a href="/verify-admin" class="btn-secondary">Back to overview</a>
+                <a href="/verify-admin/verified" class="btn-primary">Open verified database</a>
+            </div>
+        </section>
         <% } else { %>
-        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+        <p class="kyc-list-hint" id="queueHint"><%= pending.length %> contractor<%= pending.length === 1 ? '' : 's' %> waiting for review</p>
+        <div class="kyc-queue-list">
             <% pending.forEach(function (u) {
                 var pay = payBadge(u.payment_status);
                 var docs = kycDocs(u);
-                var searchKey = [u.kyc_id, u.full_name, u.email, u.phone].join(' ').toLowerCase();
+                var uploaded = uploadedCount(docs);
+                var searchKey = [u.kyc_id, u.full_name, u.email, u.phone, u.specialization].join(' ').toLowerCase();
             %>
-            <div class="kyc-card" data-search="<%= searchKey %>"
-                 style="background: rgba(15,23,42,0.6); border-radius: 12px; border: 1px solid var(--surface-border); overflow: hidden;">
-                <div onclick="toggleDetails(<%= u.kyc_id %>)"
-                     style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.02)">
-                    <div>
-                        <h3 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                            <%= safe(u.full_name) %>
-                            <span style="font-size: 0.8rem; background: rgba(234, 179, 8, 0.1); color: #eab308; padding: 0.2rem 0.5rem; border-radius: 4px;">KYC #<%= u.kyc_id %></span>
-                            <span style="font-size: 0.8rem; color: <%= pay.color %>;"><%= pay.label %></span>
-                        </h3>
-                        <p style="color: var(--text-muted); margin: 0;">
-                            <%= safe(u.phone) %> · <%= safe(u.email) %> · <%= safe(u.specialization) %>
-                        </p>
-                    </div>
-                    <div><i data-lucide="chevron-down" id="icon-<%= u.kyc_id %>"></i></div>
-                </div>
-
-                <div id="details-<%= u.kyc_id %>" style="display: none; padding: 1.5rem; border-top: 1px solid var(--surface-border);">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <article class="kyc-card kyc-search-item" data-search="<%= searchKey %>">
+                <button type="button" class="kyc-card-head" onclick="toggleDetails(<%= u.kyc_id %>)">
+                    <div class="kyc-card-identity">
+                        <span class="kyc-avatar"><%= String(safe(u.full_name)).charAt(0).toUpperCase() %></span>
                         <div>
-                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Experience</p>
+                            <h3>
+                                <%= safe(u.full_name) %>
+                                <span class="kyc-pill kyc-pill-warn">KYC #<%= u.kyc_id %></span>
+                                <span class="kyc-pill" style="color:<%= pay.color %>;background:<%= pay.bg %>;"><%= pay.label %></span>
+                            </h3>
+                            <p><%= safe(u.email) %> · <%= safe(u.phone) %> · <%= safe(u.specialization) %></p>
+                        </div>
+                    </div>
+                    <div class="kyc-card-meta">
+                        <span><%= uploaded %>/<%= docs.length %> docs</span>
+                        <i data-lucide="chevron-down" id="icon-<%= u.kyc_id %>"></i>
+                    </div>
+                </button>
+
+                <div class="kyc-card-body" id="details-<%= u.kyc_id %>" hidden>
+                    <div class="kyc-meta-grid">
+                        <div>
+                            <p>Experience</p>
                             <strong><%= safe(u.experience) %> yrs</strong>
                         </div>
                         <div>
-                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Availability</p>
+                            <p>Availability</p>
                             <strong><%= safe(u.availability) %></strong>
                         </div>
                         <div>
-                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Base price</p>
+                            <p>Base price</p>
                             <strong><%= u.base_price_range ? ('₹' + u.base_price_range + '/sq.ft') : '—' %></strong>
                         </div>
                         <div>
-                            <p style="margin:0;font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;">Payment</p>
+                            <p>Payment</p>
                             <strong><%= safe(u.contractor_payment_status) %> · <%= money(u.payment_amount) %></strong>
+                        </div>
+                        <div>
+                            <p>Submitted</p>
+                            <strong><%= u.created_at ? new Date(u.created_at).toLocaleString('en-IN') : '—' %></strong>
                         </div>
                     </div>
 
-                    <h4 style="margin-bottom: 0.75rem;">Documents (<%= docs.length %>)</h4>
-                    <% if (docs.length === 0) { %>
-                    <p style="color: var(--text-muted); margin-bottom: 1.25rem;">No documents uploaded.</p>
-                    <% } else { %>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
-                        <% docs.forEach(function (doc) { %>
-                        <a href="<%= docUrl(doc.file) %>" target="_blank" rel="noopener"
-                           style="padding: 0.9rem; border: 1px solid var(--surface-border); border-radius: 8px; text-align: center; text-decoration: none; color: inherit; display:block;">
-                            <i data-lucide="file-text" style="color:var(--accent); margin-bottom: 0.4rem;"></i>
-                            <p style="font-size:0.85rem; margin:0;">View <%= doc.label %></p>
-                        </a>
-                        <% }) %>
+                    <div class="kyc-docs-block">
+                        <div class="kyc-docs-head">
+                            <p>KYC documents</p>
+                            <span><%= uploaded %> / <%= docs.length %> uploaded</span>
+                        </div>
+                        <div class="kyc-doc-grid">
+                            <% docs.forEach(function (doc) { %>
+                                <% if (doc.uploaded) { %>
+                                <a class="kyc-doc-card is-uploaded" href="<%= docUrl(doc.file) %>" target="_blank" rel="noopener">
+                                    <i data-lucide="<%= doc.icon %>"></i>
+                                    <strong><%= doc.label %></strong>
+                                    <em>View file</em>
+                                </a>
+                                <% } else { %>
+                                <div class="kyc-doc-card is-missing">
+                                    <i data-lucide="<%= doc.icon %>"></i>
+                                    <strong><%= doc.label %></strong>
+                                    <em>Not uploaded</em>
+                                </div>
+                                <% } %>
+                            <% }) %>
+                        </div>
                     </div>
-                    <% } %>
 
-                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                        <button type="button" class="btn-primary" style="background:#22c55e; flex:1; min-width:140px;"
-                                onclick="setKycStatus(<%= u.kyc_id %>, 'approve')">
-                            <i data-lucide="check-circle" style="width:16px;height:16px;"></i> Approve
+                    <div class="kyc-card-actions">
+                        <button type="button" class="btn-primary kyc-approve" onclick="setKycStatus(<%= u.kyc_id %>, 'approve')">
+                            <i data-lucide="check-circle"></i> Approve
                         </button>
-                        <button type="button" class="btn-secondary" style="border-color:#ef4444;color:#ef4444; flex:1; min-width:140px;"
-                                onclick="setKycStatus(<%= u.kyc_id %>, 'reject')">
-                            <i data-lucide="x-circle" style="width:16px;height:16px;"></i> Reject
+                        <button type="button" class="btn-secondary kyc-reject" onclick="setKycStatus(<%= u.kyc_id %>, 'reject')">
+                            <i data-lucide="x-circle"></i> Reject
                         </button>
                     </div>
                 </div>
-            </div>
+            </article>
             <% }) %>
         </div>
         <% } %>
@@ -156,10 +198,15 @@
     if (searchInput) {
         searchInput.addEventListener('input', function (e) {
             var term = e.target.value.toLowerCase();
+            var visible = 0;
             document.querySelectorAll('.kyc-card').forEach(function (card) {
                 var hay = (card.getAttribute('data-search') || '').toLowerCase();
-                card.style.display = hay.indexOf(term) !== -1 ? 'block' : 'none';
+                var show = hay.indexOf(term) !== -1;
+                card.style.display = show ? '' : 'none';
+                if (show) visible += 1;
             });
+            var hint = document.getElementById('queueHint');
+            if (hint) hint.textContent = visible + ' contractor' + (visible === 1 ? '' : 's') + ' waiting for review';
         });
     }
 
@@ -167,13 +214,8 @@
         var el = document.getElementById('details-' + id);
         var icon = document.getElementById('icon-' + id);
         if (!el) return;
-        if (el.style.display === 'none') {
-            el.style.display = 'block';
-            if (icon) icon.setAttribute('data-lucide', 'chevron-up');
-        } else {
-            el.style.display = 'none';
-            if (icon) icon.setAttribute('data-lucide', 'chevron-down');
-        }
+        el.hidden = !el.hidden;
+        if (icon) icon.setAttribute('data-lucide', el.hidden ? 'chevron-down' : 'chevron-up');
         if (window.lucide) lucide.createIcons();
     }
 
@@ -194,4 +236,3 @@
         }
     }
 </script>
-

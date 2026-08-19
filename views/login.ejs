@@ -13,17 +13,32 @@
   <%
     var loginEndpoint = (typeof loginEndpoint !== 'undefined' && loginEndpoint) ? loginEndpoint : '/login';
   %>
+  <div id="google_translate_element" class="lg-google-translate-host"></div>
   <%- include('partials/login') %>
 
   <script>
     (function () {
       var loginEndpoint = '<%= loginEndpoint %>';
+      var html = document.documentElement;
       var form = document.getElementById('loginForm');
       var alertBox = document.getElementById('loginAlert');
       var alertText = document.getElementById('loginAlertText');
       var toggleBtn = document.getElementById('togglePass');
       var passInput = document.getElementById('loginPass');
       var forgot = document.getElementById('forgotPass');
+      var themeBtn = document.getElementById('loginThemeBtn');
+
+      function applyTheme(theme) {
+        var isLight = theme === 'light';
+        html.classList.toggle('light-theme', isLight);
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        if (themeBtn) {
+          themeBtn.innerHTML = isLight
+            ? '<i data-lucide="moon"></i>'
+            : '<i data-lucide="sun"></i>';
+        }
+        if (window.lucide) lucide.createIcons();
+      }
 
       function showError(message) {
         if (!alertBox) return;
@@ -45,6 +60,13 @@
         forgot.addEventListener('click', function (e) {
           e.preventDefault();
           alert('Password reset is not available yet. Contact support if you need help.');
+        });
+      }
+
+      if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+          var next = html.classList.contains('light-theme') ? 'dark' : 'light';
+          applyTheme(next);
         });
       }
 
@@ -70,7 +92,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, password: password })
           })
-            .then(function (response) { return response.json(); })
+            .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.success) {
                 window.location.href = data.redirect || '/';
@@ -90,8 +112,10 @@
         });
       }
 
+      applyTheme(localStorage.getItem('theme') || 'light');
       if (window.lucide) lucide.createIcons();
     })();
   </script>
+  <script src="/js/app.js"></script>
 </body>
 </html>

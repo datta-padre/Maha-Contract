@@ -1,12 +1,19 @@
 <%
     var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
 %>
-<aside class="sidebar">
-    <div class="logo sidebar-logo">
-        <i data-lucide="shield-check" class="logo-icon"></i>
-        <span style="color:#ef4444;">Admin</span>Desk
+<aside class="sidebar kyc-sidebar">
+    <div class="kyc-topbar">
+        <a href="/verify-admin" class="kyc-topbar-brand">
+            <span class="kyc-topbar-icon" aria-hidden="true">
+                <i data-lucide="shield-check"></i>
+            </span>
+            <span class="kyc-topbar-title"><em>Admin</em>Desk</span>
+        </a>
+        <button type="button" class="kyc-menu-btn" aria-label="Toggle navigation" aria-expanded="false">
+            <i data-lucide="menu"></i>
+        </button>
     </div>
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav kyc-sidebar-nav">
         <a href="/verify-admin" class="<%= page === 'overview' ? 'active' : '' %>">
             <i data-lucide="layout-dashboard"></i> Overview
         </a>
@@ -19,3 +26,34 @@
         <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
     </nav>
 </aside>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var root = document.querySelector('.kyc-desk');
+    if (!root) return;
+
+    var btn = root.querySelector('.kyc-menu-btn');
+    var nav = root.querySelector('.kyc-sidebar-nav');
+    if (!btn || !nav) return;
+
+    function setMenuOpen(open) {
+        nav.classList.toggle('menu-open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.innerHTML = open ? '<i data-lucide="x"></i>' : '<i data-lucide="menu"></i>';
+        if (window.lucide) lucide.createIcons();
+    }
+
+    btn.addEventListener('click', function (e) {
+        setMenuOpen(!nav.classList.contains('menu-open'));
+        e.stopPropagation();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!nav.classList.contains('menu-open')) return;
+        if (!nav.contains(e.target) && !btn.contains(e.target)) setMenuOpen(false);
+    });
+
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 1024 && nav.classList.contains('menu-open')) setMenuOpen(false);
+    });
+});
+</script>
