@@ -1,22 +1,7 @@
 <%- include('../partials/header') %>
 <div class="background-animation"></div>
-    
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo">
-                <i data-lucide="hard-hat" class="logo-icon"></i>
-                <span class="notranslate"><span>Build</span>Tender</span>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
-                <a href="/houseowner/post"><i data-lucide="file-plus"></i> Post Tender Details</a>
-                <a href="/houseowner/tenders" class="active"><i data-lucide="file-text"></i> Active Tenders</a>
-                <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
-                <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
-                <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
-                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+<div class="dashboard-layout ho-desk">
+    <%- include('./_sidebar', { activePage: 'tenders' }) %>
 
         <main class="dashboard-content">
             <header class="dashboard-header">
@@ -460,7 +445,7 @@
             html += '</style></head><body>';
 
             html += '<div class="h">';
-            html += '<div><p class="t">BuildTender — Tender #' + (d.tenderId || '') + '</p>';
+            html += '<div><p class="t">Maha Contract — Tender #' + (d.tenderId || '') + '</p>';
             html += '<p class="sub">Owner + Tender Information · ' + new Date().toLocaleString('en-IN') + '</p></div>';
             html += '<div style="color:#666;font-size:12px;">A4 View</div>';
             html += '</div>';

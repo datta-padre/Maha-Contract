@@ -1,56 +1,152 @@
 <%- include('../partials/header') %>
+<%
+    var totalTenders = Number(typeof total_tenders !== 'undefined' ? total_tenders : 0) || 0;
+    var paidTenders = Number(typeof paid_tenders !== 'undefined' ? paid_tenders : 0) || 0;
+    var estimatedTenders = Number(typeof estimated_tenders !== 'undefined' ? estimated_tenders : 0) || 0;
+    var feesPaid = Number(typeof fees_paid !== 'undefined' ? fees_paid : 0) || 0;
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '₹0';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+%>
 <div class="background-animation"></div>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-            <nav class="sidebar-nav">
-                <a href="/houseowner/overview" class="active"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
-                <a href="/houseowner/post"><i data-lucide="file-plus"></i> Post Tender Details</a>
-                <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
-                <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
-                <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
-                <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
-                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+<div class="dashboard-layout ho-desk">
+    <%- include('./_sidebar', { activePage: 'overview' }) %>
 
-        <main class="dashboard-content">
-            <header class="dashboard-header">
+    <main class="dashboard-content">
+        <header class="dashboard-header ho-header">
+            <div>
+                <p class="ho-kicker">House Owner</p>
+                <h2>Account Overview</h2>
+                <p class="ho-subtitle">Track tenders, payments, and next steps for your construction projects.</p>
+            </div>
+            <a href="/houseowner/post" class="btn-primary ho-header-cta">
+                <i data-lucide="plus"></i> Post new tender
+            </a>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="ho-stat-row">
+            <a class="ho-stat-card is-info" href="/houseowner/tenders">
+                <i data-lucide="folder"></i>
                 <div>
-                    <h2>Account Overview</h2>
-                    <p style="color: var(--text-muted);">Top-level metrics regarding your construction projects.</p>
+                    <strong><%= totalTenders %></strong>
+                    <p>Total tenders</p>
                 </div>
-            </header>
+                <span class="ho-stat-link">View <i data-lucide="arrow-right"></i></span>
+            </a>
+            <a class="ho-stat-card is-ok" href="/houseowner/tenders">
+                <i data-lucide="badge-check"></i>
+                <div>
+                    <strong><%= estimatedTenders %></strong>
+                    <p>Estimated budgets</p>
+                </div>
+                <span class="ho-stat-link">View <i data-lucide="arrow-right"></i></span>
+            </a>
+            <a class="ho-stat-card is-warn" href="/houseowner/payments">
+                <i data-lucide="wallet"></i>
+                <div>
+                    <strong><%= paidTenders %></strong>
+                    <p>Paid tenders</p>
+                </div>
+                <span class="ho-stat-link">View <i data-lucide="arrow-right"></i></span>
+            </a>
+            <a class="ho-stat-card is-purple" href="/houseowner/payments">
+                <i data-lucide="banknote"></i>
+                <div>
+                    <strong><%= money(feesPaid) %></strong>
+                    <p>Fees paid</p>
+                </div>
+                <span class="ho-stat-link">View <i data-lucide="arrow-right"></i></span>
+            </a>
+        </div>
 
-            <div class="dashboard-grid" style="margin-bottom: 2rem;">
-                <a href="/houseowner/tenders">
-                <div class="stat-card">
-                    <i data-lucide="folder" style="color: #38bdf8;"></i>
-                    <h3 style="font-size: 2rem; font-weight: 600; color: var(--accent);text-decoration: none;"><%= total_tenders %></h3>
-                    <p style="color: var(--text-muted);">Total Tenders Posted</p>
+        <div class="ho-panels">
+            <section class="ho-panel">
+                <div class="ho-panel-head">
+                    <h3>Quick actions</h3>
+                    <p>Common next steps for your project desk.</p>
                 </div>
-                </a>
-                <a href="/houseowner/tenders">
-                <div class="stat-card">
-                    <i data-lucide="hard-hat" style="color: #22c55e;"></i>
-                    <h3>0</h3>
-                    <p>Contractors Hired</p>
+                <div class="ho-action-grid">
+                    <a class="ho-action-card" href="/houseowner/post">
+                        <i data-lucide="file-plus"></i>
+                        <strong>Post tender</strong>
+                        <span>Submit plot details and start estimation.</span>
+                    </a>
+                    <a class="ho-action-card" href="/houseowner/tenders">
+                        <i data-lucide="file-text"></i>
+                        <strong>Active tenders</strong>
+                        <span>Review status and uploaded documents.</span>
+                    </a>
+                    <a class="ho-action-card" href="/houseowner/materials">
+                        <i data-lucide="shopping-bag"></i>
+                        <strong>Material shop</strong>
+                        <span>Browse construction materials and rates.</span>
+                    </a>
+                    <a class="ho-action-card" href="/houseowner/profile">
+                        <i data-lucide="user"></i>
+                        <strong>My profile</strong>
+                        <span>Update contact and account details.</span>
+                    </a>
                 </div>
-                <a href="/houseowner/payments">
-                    <div class="stat-card">
-                        <i data-lucide="wallet" style="color: #a855f7;"></i>
-                        <h3>0</h3>
-                        <p>Total Capital Disbursed</p>
+            </section>
+
+            <section class="ho-panel">
+                <% if (totalTenders === 0) { %>
+                <div class="ho-empty">
+                    <div class="ho-empty-icon"><i data-lucide="activity"></i></div>
+                    <h3>No account activity yet</h3>
+                    <p>You have not posted any property blueprints. Start with a tender to unlock estimation and contractor bidding.</p>
+                    <div class="ho-empty-actions">
+                        <a href="/houseowner/post" class="btn-primary">Post tender details</a>
+                        <a href="/houseowner/materials" class="btn-secondary">Browse materials</a>
                     </div>
-                </a>
-            </div>
+                </div>
+                <% } else { %>
+                <div class="ho-panel-head">
+                    <h3>Workspace status</h3>
+                    <p>Your tender desk is active.</p>
+                </div>
+                <ul class="ho-checklist">
+                    <li class="is-done">
+                        <i data-lucide="check-circle-2"></i>
+                        <div>
+                            <strong><%= totalTenders %> tender<%= totalTenders === 1 ? '' : 's' %> posted</strong>
+                            <span>Blueprint submissions are registered in your account.</span>
+                        </div>
+                    </li>
+                    <li class="<%= paidTenders > 0 ? 'is-done' : '' %>">
+                        <i data-lucide="<%= paidTenders > 0 ? 'check-circle-2' : 'circle' %>"></i>
+                        <div>
+                            <strong><%= paidTenders %> paid</strong>
+                            <span>Platform fees completed for tender processing.</span>
+                        </div>
+                    </li>
+                    <li class="<%= estimatedTenders > 0 ? 'is-done' : '' %>">
+                        <i data-lucide="<%= estimatedTenders > 0 ? 'check-circle-2' : 'circle' %>"></i>
+                        <div>
+                            <strong><%= estimatedTenders %> estimated</strong>
+                            <span>Budget desk has returned cost estimates.</span>
+                        </div>
+                    </li>
+                </ul>
+                <div class="ho-empty-actions" style="justify-content:flex-start;margin-top:1.25rem;">
+                    <a href="/houseowner/tenders" class="btn-primary">Open active tenders</a>
+                    <a href="/houseowner/post" class="btn-secondary">Post another</a>
+                </div>
+                <% } %>
+            </section>
+        </div>
+    </main>
+</div>
 
-            <div class="empty-state">
-                <i data-lucide="activity" style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--surface-border);"></i>
-                <h3>No Account Activity</h3>
-                <p>You have not posted any property blueprints yet. Go to 'Post Tender Details' to begin your first project.</p>
-            </div>
-        </main>
-    </div>
-    <script src="/js/app.js"></script>
-    <script>lucide.createIcons();</script>
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

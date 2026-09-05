@@ -15,17 +15,18 @@
     }
 %>
 <div class="background-animation"></div>
-<div class="dashboard-layout">
+<div class="dashboard-layout bdg-desk">
     <%- include('./_sidebar') %>
 
     <main class="dashboard-content">
-        <header class="dashboard-header">
+        <header class="dashboard-header bdg-header">
             <div>
+                <p class="bdg-kicker">Budget Admin</p>
                 <h2>Budget Estimator Desk</h2>
-                <p style="color: var(--text-muted); margin-top: 0.35rem;">Estimate base costs, assign completion dates, and forward reports for tender publishing.</p>
+                <p class="bdg-subtitle">Estimate base costs, assign completion dates, and forward reports for tender publishing.</p>
             </div>
-            <a href="/budget-admin/pending" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;">
-                <i data-lucide="clock" style="width:16px;height:16px;"></i> Open pending queue
+            <a href="/budget-admin/pending" class="btn-primary bdg-header-cta">
+                <i data-lucide="clock"></i> Open pending queue
             </a>
         </header>
 
@@ -36,70 +37,87 @@
         </div>
         <% } %>
 
-        <div class="dashboard-grid" style="margin-bottom: 2rem;">
-            <div class="stat-card">
-                <i data-lucide="clock" style="color:#38bdf8;"></i>
-                <h3><%= stats.pending || 0 %></h3>
-                <p>Pending Estimations</p>
+        <div class="bdg-stat-row">
+            <div class="bdg-stat-card is-info">
+                <i data-lucide="clock"></i>
+                <div>
+                    <strong><%= stats.pending || 0 %></strong>
+                    <p>Pending Estimations</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <i data-lucide="check-circle" style="color:#22c55e;"></i>
-                <h3><%= stats.estimated || 0 %></h3>
-                <p>Estimated Budgets</p>
+            <div class="bdg-stat-card is-ok">
+                <i data-lucide="check-circle"></i>
+                <div>
+                    <strong><%= stats.estimated || 0 %></strong>
+                    <p>Estimated Budgets</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <i data-lucide="badge-check" style="color:#4ade80;"></i>
-                <h3><%= stats.approved || 0 %></h3>
-                <p>Approved Budgets</p>
+            <div class="bdg-stat-card is-ok-strong">
+                <i data-lucide="badge-check"></i>
+                <div>
+                    <strong><%= stats.approved || 0 %></strong>
+                    <p>Approved Budgets</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <i data-lucide="wallet" style="color:#eab308;"></i>
-                <h3><%= stats.paid || 0 %></h3>
-                <p>Paid Tenders</p>
+            <div class="bdg-stat-card is-warn">
+                <i data-lucide="wallet"></i>
+                <div>
+                    <strong><%= stats.paid || 0 %></strong>
+                    <p>Paid Tenders</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <i data-lucide="banknote" style="color:#a78bfa;"></i>
-                <h3><%= money(stats.feesCollected) %></h3>
-                <p>Fees Collected</p>
+            <div class="bdg-stat-card is-purple">
+                <i data-lucide="banknote"></i>
+                <div>
+                    <strong><%= money(stats.feesCollected) %></strong>
+                    <p>Fees Collected</p>
+                </div>
             </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem;">
-            <section style="background:rgba(15,23,42,0.55);border:1px solid var(--surface-border);border-radius:14px;padding:1.25rem;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                    <h3 style="margin:0;font-family:'Outfit';color:#38bdf8;">Pending queue</h3>
-                    <a href="/budget-admin/pending" style="color:var(--accent);font-size:0.85rem;text-decoration:none;">View all</a>
+        <div class="bdg-panels">
+            <section class="bdg-panel">
+                <div class="bdg-panel-head">
+                    <h3 class="is-pending">Pending queue</h3>
+                    <a href="/budget-admin/pending">View all</a>
                 </div>
                 <% if (!pending.length) { %>
-                <p style="margin:0;color:var(--text-muted);">No tenders waiting for budget estimation.</p>
+                <div class="bdg-empty">
+                    <i data-lucide="inbox"></i>
+                    <p>No tenders waiting for budget estimation.</p>
+                </div>
                 <% } else { %>
-                <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                <div class="bdg-list">
                     <% pending.forEach(function (t) { %>
-                    <a href="/budget-admin/estimate/<%= t.tender_id %>" style="display:block;text-decoration:none;color:inherit;padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.18);">
-                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
-                        <div style="margin-top:0.3rem;color:var(--text-muted);font-size:0.85rem;">
-                            <%= safe(t.plotArea) %> · Owner budget <%= money(t.budget) %>
+                    <a class="bdg-list-item is-link" href="/budget-admin/estimate/<%= t.tender_id %>">
+                        <div class="bdg-list-main">
+                            <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                            <span><%= safe(t.plotArea) %> · Owner budget <%= money(t.budget) %></span>
                         </div>
+                        <i data-lucide="chevron-right"></i>
                     </a>
                     <% }) %>
                 </div>
                 <% } %>
             </section>
 
-            <section style="background:rgba(15,23,42,0.55);border:1px solid var(--surface-border);border-radius:14px;padding:1.25rem;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                    <h3 style="margin:0;font-family:'Outfit';color:#22c55e;">Recently estimated</h3>
-                    <a href="/budget-admin/completed" style="color:var(--accent);font-size:0.85rem;text-decoration:none;">View all</a>
+            <section class="bdg-panel">
+                <div class="bdg-panel-head">
+                    <h3 class="is-done">Recently estimated</h3>
+                    <a href="/budget-admin/completed">View all</a>
                 </div>
                 <% if (!estimated.length) { %>
-                <p style="margin:0;color:var(--text-muted);">Completed estimates will appear here.</p>
+                <div class="bdg-empty">
+                    <i data-lucide="file-check-2"></i>
+                    <p>Completed estimates will appear here.</p>
+                </div>
                 <% } else { %>
-                <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                <div class="bdg-list">
                     <% estimated.forEach(function (t) { %>
-                    <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--surface-border);background:rgba(0,0,0,0.18);">
-                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
-                        <div style="margin-top:0.3rem;color:var(--text-muted);font-size:0.85rem;">
-                            Est. <%= money(t.estimated_cost) %> · Target <%= t.estimated_completion_date ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN') : '—' %>
+                    <div class="bdg-list-item">
+                        <div class="bdg-list-main">
+                            <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                            <span>Est. <%= money(t.estimated_cost) %> · Target <%= t.estimated_completion_date ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN') : '—' %></span>
                         </div>
                     </div>
                     <% }) %>

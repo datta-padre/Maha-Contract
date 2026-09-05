@@ -68,17 +68,36 @@ if (document.readyState === 'loading') {
 }
 
 function openModal(modalId) {
-    document.getElementById(modalId).style.display = 'flex';
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'none';
+    const anyOpen = Array.from(document.querySelectorAll('.modal')).some(
+        (m) => m.style.display === 'flex'
+    );
+    if (!anyOpen) {
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    }
 }
 
 // Close modal if clicked outside
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
-        event.target.style.display = "none";
+        event.target.style.display = 'none';
+        const anyOpen = Array.from(document.querySelectorAll('.modal')).some(
+            (m) => m.style.display === 'flex'
+        );
+        if (!anyOpen) {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+        }
     }
 }
 

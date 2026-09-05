@@ -1,82 +1,71 @@
 <%- include('../partials/header') %>
 <div class="background-animation"></div>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-            <nav class="sidebar-nav">
-                <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
-                <a href="/houseowner/post"><i data-lucide="file-plus"></i> Post Tender Details</a>
-                <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
-                <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
-                <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
-                <a href="/houseowner/profile" class="active"><i data-lucide="user"></i> My Profile</a>
-                <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+<div class="dashboard-layout ho-desk">
+    <%- include('./_sidebar', { activePage: 'profile' }) %>
 
-        <main class="dashboard-content">
-            <header class="dashboard-header">
-                <div>
-                    <h2>Account Settings</h2>
-                    <p style="color: var(--text-muted);">Manage your personal House Owner profile and security.</p>
-                </div>
-            </header>
+    <main class="dashboard-content">
+        <header class="dashboard-header ho-header">
+            <div>
+                <p class="ho-kicker">House Owner</p>
+                <h2>Account Settings</h2>
+                <p class="ho-subtitle">Manage your personal profile, contact details, and security.</p>
+            </div>
+        </header>
 
-            <% if (typeof user !== 'undefined' && user) { %>
-            <div class="profile-header">
-                <div class="profile-avatar"><i data-lucide="user"></i></div>
-                <div>
-                    <h3 style="font-size: 1.5rem; margin-bottom: 0.25rem;"><%= user.username %></h3>
-                    <p style="color: var(--text-muted); margin-bottom: 0.5rem;"><%= user.email %></p>
-                    <span class="status-badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);">
-                        <i data-lucide="shield-check" style="width:14px; display:inline; vertical-align:middle;"></i>
-                        <%= user.role %>
-                    </span>
+        <% if (typeof user !== 'undefined' && user) { %>
+        <section class="ho-profile-card">
+            <div class="ho-profile-avatar"><i data-lucide="user"></i></div>
+            <div class="ho-profile-meta">
+                <h3><%= user.username %></h3>
+                <p><%= user.email %></p>
+                <span class="ho-role-badge">
+                    <i data-lucide="shield-check"></i>
+                    <%= user.role %>
+                </span>
+            </div>
+        </section>
+
+        <form class="ho-profile-form" action="/update-profile" method="post">
+            <div class="ho-form-section">
+                <h3>Personal information</h3>
+                <div class="ho-form-grid">
+                    <div class="form-group">
+                        <label for="hoUsername">Full Name</label>
+                        <input id="hoUsername" type="text" name="username" value="<%= user.username %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hoEmail">Email Address</label>
+                        <input id="hoEmail" type="email" name="email" value="<%= user.email %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hoMobile">Phone Number</label>
+                        <input id="hoMobile" type="tel" name="mobile" value="<%= user.mobile %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hoPassword">Change Password</label>
+                        <input id="hoPassword" type="password" name="password" placeholder="Leave blank to keep current password">
+                    </div>
                 </div>
             </div>
 
-            <form class="tender-form" action="/update-profile" method="post" style="background: rgba(15, 23, 42, 0.4); padding: 2rem; border-radius: 12px; border: 1px solid var(--surface-border);">
-                <h3 style="margin-bottom: 1.5rem; font-family: 'Outfit'; color: var(--accent);">Personal Information</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" name="username" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.username %>" required>
+            <div class="ho-form-section">
+                <h3>Location details</h3>
+                <div class="ho-form-grid">
+                    <div class="form-group ho-form-span">
+                        <label for="hoAddress">Street Address</label>
+                        <input id="hoAddress" type="text" name="address" value="<%= user.address || '' %>" placeholder="Flat, House no., Building, Company, Apartment">
                     </div>
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" name="email" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.email %>" required>
-                    </div>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Phone Number</label>
-                        <input type="tel" name="mobile" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.mobile %>" required>
+                        <label for="hoTaluka">Taluka (Tal)</label>
+                        <input id="hoTaluka" type="text" name="taluka" value="<%= user.taluka || '' %>" placeholder="e.g. Haveli">
                     </div>
                     <div class="form-group">
-                        <label>Change Password</label>
-                        <input type="password" name="password" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" placeholder="Leave blank to keep current password">
-                    </div>
-                </div>
-                
-                <h3 style="margin: 2.5rem 0 1.5rem; font-family: 'Outfit'; color: var(--accent);">Location Details</h3>
-                <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
-                    <div class="form-group">
-                        <label>Street Address</label>
-                        <input type="text" name="address" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.address || '' %>" placeholder="Flat, House no., Building, Company, Apartment">
-                    </div>
-                </div>
-                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                    <div class="form-group">
-                        <label>Taluka (Tal)</label>
-                        <input type="text" name="taluka" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.taluka || '' %>" placeholder="e.g. Haveli">
+                        <label for="hoDistrict">District (Dist)</label>
+                        <input id="hoDistrict" type="text" name="district" value="<%= user.district || '' %>" placeholder="e.g. Pune">
                     </div>
                     <div class="form-group">
-                        <label>District (Dist)</label>
-                        <input type="text" name="district" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.district || '' %>" placeholder="e.g. Pune">
-                    </div>
-                    <div class="form-group">
-                        <label>State</label>
-                        <select name="state" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;">
+                        <label for="hoState">State</label>
+                        <select id="hoState" name="state">
                             <option value="" <%= !user.state ? 'selected' : '' %>>Select State</option>
                             <option value="Maharashtra" <%= user.state === 'Maharashtra' ? 'selected' : '' %>>Maharashtra</option>
                             <option value="Gujarat" <%= user.state === 'Gujarat' ? 'selected' : '' %>>Gujarat</option>
@@ -84,32 +73,45 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Pincode</label>
-                        <input type="text" name="pincode" style="width:100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: inherit; font-size:1rem;" value="<%= user.pincode || '' %>" placeholder="e.g. 411001">
+                        <label for="hoPincode">Pincode</label>
+                        <input id="hoPincode" type="text" name="pincode" value="<%= user.pincode || '' %>" placeholder="e.g. 411001">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="margin-top: 1rem;"><i  style="display:inline; width:18px; vertical-align:middle; margin-right:5px;"></i> Save Changes</button>
-            </form>
+            </div>
 
-            <h3 style="margin: 2.5rem 0 1.5rem; font-family: 'Outfit'; color: var(--accent);">Account Info</h3>
-            <div class="form-grid" style="margin-bottom: 2rem;">
-                <div style="background: var(--surface); border: 1px solid var(--surface-border); padding: 1.5rem; border-radius: 8px;">
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.25rem;">Member Since</p>
-                    <p style="margin: 0; font-weight: 600;"><%= user.created_at ? new Date(user.created_at).toLocaleDateString('en-IN') : 'N/A' %></p>
+            <div class="ho-form-actions">
+                <button type="submit" class="btn-primary">
+                    <i data-lucide="save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+
+        <section class="ho-form-section">
+            <h3>Account info</h3>
+            <div class="ho-info-grid">
+                <div class="ho-info-card">
+                    <p class="ho-info-label">Member Since</p>
+                    <p class="ho-info-value"><%= user.created_at ? new Date(user.created_at).toLocaleDateString('en-IN') : 'N/A' %></p>
                 </div>
-                <div style="background: var(--surface); border: 1px solid var(--surface-border); padding: 1.5rem; border-radius: 8px;">
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.25rem;">Account Role</p>
-                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;"><%= user.role %></p>
+                <div class="ho-info-card">
+                    <p class="ho-info-label">Account Role</p>
+                    <p class="ho-info-value"><%= user.role %></p>
                 </div>
             </div>
-            <% } else { %>
-            <div class="empty-state">
-                <h3>User not found</h3>
-                <p>Please login again to view your profile.</p>
-                <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Go to Login</a>
+        </section>
+        <% } else { %>
+        <section class="ho-empty-panel">
+            <div class="ho-empty-icon">
+                <i data-lucide="user-x"></i>
             </div>
-            <% } %>
-        </main>
-    </div>
-    <script src="/js/app.js"></script>
-    <script>lucide.createIcons();</script>
+            <h3>User not found</h3>
+            <p>Please login again to view your profile.</p>
+            <div class="ho-empty-actions">
+                <a href="/" class="btn-primary">Go to Login</a>
+            </div>
+        </section>
+        <% } %>
+    </main>
+</div>
+<script src="/js/app.js"></script>
+<script>lucide.createIcons();</script>

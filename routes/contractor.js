@@ -12,32 +12,8 @@ if (!fs.existsSync('public/kyc')) {
     fs.mkdirSync('public/kyc', { recursive: true });
 }
 
-const KYC_FEES = {
-    Advance: 5900,
-    Intermediate: 3540,
-    Final: 5635
-};
 
-const PAYMENT_ORDER = ['Advance', 'Intermediate', 'Final'];
 
-function getCompletedPayments(row) {
-    if (!row || row.payment_status !== 'paid') return [];
-    var idx = PAYMENT_ORDER.indexOf(row.contractor_payment_status);
-    if (idx < 0) return [];
-    return PAYMENT_ORDER.slice(0, idx + 1);
-}
-
-function nextPaymentType(completed) {
-    for (var i = 0; i < PAYMENT_ORDER.length; i++) {
-        if (completed.indexOf(PAYMENT_ORDER[i]) === -1) return PAYMENT_ORDER[i];
-    }
-    return null;
-}
-
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-});
 
 function saveFile(file, prefix) {
     if (!file || !file.name) return null;
@@ -463,6 +439,9 @@ router.get('/materials', contractorOnly, async (req, res) => {
 });
 router.get('/bids', contractorOnly, (req, res) => {
     res.render('contractor/bids');
+});
+router.get('/live-tenders', contractorOnly, (req, res) => {
+    res.render('contractor/live-tenders');
 });
 router.get('/profile', contractorOnly, (req, res) => {
     res.render('contractor/profile');

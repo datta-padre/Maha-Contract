@@ -13,25 +13,42 @@
     }
     function payBadge(status) {
         var s = (status || 'pending').toLowerCase();
-        if (s === 'paid') return { color: '#22c55e', label: 'Paid' };
-        if (s === 'failed') return { color: '#ef4444', label: 'Failed' };
-        return { color: '#eab308', label: 'Pending' };
+        if (s === 'paid') return { cls: 'is-ok', label: 'Paid' };
+        if (s === 'failed') return { cls: 'is-bad', label: 'Failed' };
+        return { cls: 'is-warn', label: 'Pending' };
     }
     function paymentDate(t) {
         if (t.payment_date) return new Date(t.payment_date).toLocaleString('en-IN');
         if (t.created_at) return new Date(t.created_at).toLocaleString('en-IN');
         return '—';
     }
+    var paidCount = tenders.filter(function (t) {
+        return String(t.payment_status || '').toLowerCase() === 'paid';
+    }).length;
+    var pendingCount = tenders.filter(function (t) {
+        return String(t.payment_status || '').toLowerCase() !== 'paid' && String(t.payment_status || '').toLowerCase() !== 'failed';
+    }).length;
+    var failedCount = tenders.filter(function (t) {
+        return String(t.payment_status || '').toLowerCase() === 'failed';
+    }).length;
 %>
 <div class="background-animation"></div>
-<div class="dashboard-layout">
+<div class="dashboard-layout bdg-desk">
     <%- include('./_sidebar') %>
 
     <main class="dashboard-content">
-        <header class="dashboard-header">
+        <header class="dashboard-header bdg-header">
             <div>
+                <p class="bdg-kicker">Budget Admin</p>
                 <h2>House Owner Payments</h2>
-                <p style="color: var(--text-muted); margin-top: 0.35rem;">Blueprint / tender platform fees mapped from house-owner submissions.</p>
+                <p class="bdg-subtitle">Blueprint / tender platform fees mapped from house-owner submissions.</p>
+            </div>
+            <div class="bdg-queue-count is-ok">
+                <i data-lucide="wallet"></i>
+                <div>
+                    <span>Paid</span>
+                    <strong><%= stats.paid || paidCount %></strong>
+                </div>
             </div>
         </header>
 
@@ -42,67 +59,165 @@
         </div>
         <% } %>
 
-        <div class="dashboard-grid" style="margin-bottom: 1.5rem;">
-            <div class="stat-card">
-                <i data-lucide="wallet" style="color:#eab308;"></i>
-                <h3><%= stats.paid || 0 %></h3>
-                <p>Paid tenders</p>
+        <div class="bdg-stat-row bdg-stat-row-4">
+            <div class="bdg-stat-card is-warn">
+                <i data-lucide="wallet"></i>
+                <div>
+                    <strong><%= stats.paid || paidCount %></strong>
+                    <p>Paid tenders</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <i data-lucide="banknote" style="color:#22c55e;"></i>
-                <h3><%= money(stats.feesCollected) %></h3>
-                <p>Fees collected</p>
+            <div class="bdg-stat-card is-ok">
+                <i data-lucide="banknote"></i>
+                <div>
+                    <strong><%= money(stats.feesCollected) %></strong>
+                    <p>Fees collected</p>
+                </div>
             </div>
-            <div class="stat-card">
+            <div class="bdg-stat-card is-info">
                 <i data-lucide="file-text"></i>
-                <h3><%= tenders.length %></h3>
-                <p>All tenders</p>
+                <div>
+                    <strong><%= tenders.length %></strong>
+                    <p>All tenders</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-purple">
+                <i data-lucide="clock"></i>
+                <div>
+                    <strong><%= pendingCount %></strong>
+                    <p>Pending / other</p>
+                </div>
             </div>
         </div>
 
-        <div style="overflow-x:auto;border:1px solid var(--surface-border);border-radius:12px;background:rgba(15,23,42,0.45);">
-            <table style="width:100%;border-collapse:collapse;min-width:820px;">
-                <thead>
-                    <tr style="text-align:left;color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;">
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Owner</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Tender ID</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Platform fee</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Payment status</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Txn / Order</th>
-                        <th style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% if (!tenders.length) { %>
-                    <tr>
-                        <td colspan="6" style="padding:1.5rem;text-align:center;color:var(--text-muted);">No tenders logged yet.</td>
-                    </tr>
-                    <% } else { %>
-                    <% tenders.forEach(function (t) {
-                        var pay = payBadge(t.payment_status);
-                    %>
-                    <tr>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
-                            <strong><%= safe(t.owner_name) %></strong>
-                            <div style="font-size:0.8rem;color:var(--text-muted);"><%= safe(t.owner_email) %></div>
-                        </td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">#<%= t.tender_id %></td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);"><%= money(t.payment_amount) %></td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);color:<%= pay.color %>;font-weight:600;"><%= pay.label %></td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);font-size:0.85rem;color:var(--text-muted);">
-                            <%= safe(t.payment_transaction_id) %><br><%= safe(t.razorpay_order_id) %>
-                        </td>
-                        <td style="padding:0.9rem 1rem;border-bottom:1px solid var(--surface-border);">
-                            <%= paymentDate(t) %>
-                        </td>
-                    </tr>
-                    <% }) %>
-                    <% } %>
-                </tbody>
-            </table>
+        <% if (!tenders.length) { %>
+        <section class="bdg-empty-panel">
+            <div class="bdg-empty-icon"><i data-lucide="wallet"></i></div>
+            <p class="bdg-kicker">Payments desk</p>
+            <h3>No payments logged yet</h3>
+            <p>House-owner tender platform fees will appear here as submissions come in.</p>
+            <div class="bdg-empty-actions">
+                <a href="/budget-admin" class="btn-secondary">Back to overview</a>
+            </div>
+        </section>
+        <% } else { %>
+        <div class="bdg-panel bdg-completed-panel">
+            <div class="bdg-toolbar">
+                <div class="bdg-search">
+                    <i data-lucide="search"></i>
+                    <input id="paymentsSearch" type="search" placeholder="Search owner or tender..." aria-label="Search payments">
+                </div>
+                <div class="bdg-toolbar-meta">
+                    <select id="paymentsStatusFilter" class="bdg-select" aria-label="Filter by status">
+                        <option value="all">All status</option>
+                        <option value="paid">Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <span class="bdg-count" id="paymentsCount"><%= tenders.length %> records</span>
+                </div>
+            </div>
+
+            <div class="bdg-mobile-list" id="paymentsMobileList">
+                <% tenders.forEach(function (t) {
+                    var pay = payBadge(t.payment_status);
+                    var statusKey = String(t.payment_status || 'pending').toLowerCase();
+                    var searchKey = [t.tender_id, t.owner_name, t.owner_email, t.payment_status, pay.label, t.payment_transaction_id, t.razorpay_order_id, t.payment_amount].join(' ').toLowerCase();
+                %>
+                <article class="bdg-mobile-card bdg-pay-item"
+                    data-search="<%= searchKey %>"
+                    data-status="<%= statusKey %>">
+                    <div class="bdg-mobile-head">
+                        <strong><%= safe(t.owner_name) %></strong>
+                        <span class="bdg-pill <%= pay.cls %>"><%= pay.label %></span>
+                    </div>
+                    <p class="bdg-mobile-sub"><%= safe(t.owner_email) %> · Tender #<%= t.tender_id %></p>
+                    <div class="bdg-mobile-meta">
+                        <span class="bdg-cost"><%= money(t.payment_amount) %></span>
+                        <span><%= paymentDate(t) %></span>
+                    </div>
+                    <div class="bdg-pay-ids">
+                        <p><span>Txn</span> <%= safe(t.payment_transaction_id) %></p>
+                        <p><span>Order</span> <%= safe(t.razorpay_order_id) %></p>
+                    </div>
+                </article>
+                <% }) %>
+            </div>
+
+            <div class="bdg-table-wrap bdg-table-desktop">
+                <table class="bdg-table" id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Owner</th>
+                            <th>Tender ID</th>
+                            <th>Platform fee</th>
+                            <th>Payment status</th>
+                            <th>Txn / Order</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% tenders.forEach(function (t) {
+                            var pay = payBadge(t.payment_status);
+                            var statusKey = String(t.payment_status || 'pending').toLowerCase();
+                            var searchKey = [t.tender_id, t.owner_name, t.owner_email, t.payment_status, pay.label, t.payment_transaction_id, t.razorpay_order_id, t.payment_amount].join(' ').toLowerCase();
+                        %>
+                        <tr class="bdg-pay-item"
+                            data-search="<%= searchKey %>"
+                            data-status="<%= statusKey %>">
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="bdg-sub"><%= safe(t.owner_email) %></div>
+                            </td>
+                            <td>#<%= t.tender_id %></td>
+                            <td><span class="bdg-cost"><%= money(t.payment_amount) %></span></td>
+                            <td><span class="bdg-pill <%= pay.cls %>"><%= pay.label %></span></td>
+                            <td>
+                                <div class="bdg-sub"><%= safe(t.payment_transaction_id) %></div>
+                                <div class="bdg-sub"><%= safe(t.razorpay_order_id) %></div>
+                            </td>
+                            <td><%= paymentDate(t) %></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
         </div>
+        <% } %>
     </main>
 </div>
 
 <script src="/js/app.js"></script>
-<script>if (window.lucide) lucide.createIcons();</script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    (function () {
+        var search = document.getElementById('paymentsSearch');
+        var filter = document.getElementById('paymentsStatusFilter');
+        var countEl = document.getElementById('paymentsCount');
+        var items = document.querySelectorAll('.bdg-pay-item');
+        if (!items.length) return;
+
+        function applyFilters() {
+            var q = (search && search.value ? search.value : '').trim().toLowerCase();
+            var s = filter ? filter.value : 'all';
+            var visible = 0;
+
+            items.forEach(function (row) {
+                var hay = row.getAttribute('data-search') || '';
+                var status = row.getAttribute('data-status') || 'pending';
+                var matchSearch = !q || hay.indexOf(q) !== -1;
+                var matchStatus = s === 'all' || status === s || (s === 'pending' && status !== 'paid' && status !== 'failed');
+                var show = matchSearch && matchStatus;
+                row.style.display = show ? '' : 'none';
+                if (show && row.classList.contains('bdg-mobile-card')) visible += 1;
+            });
+
+            if (countEl) countEl.textContent = visible + ' record' + (visible === 1 ? '' : 's');
+        }
+
+        if (search) search.addEventListener('input', applyFilters);
+        if (filter) filter.addEventListener('change', applyFilters);
+        applyFilters();
+    })();
+</script>

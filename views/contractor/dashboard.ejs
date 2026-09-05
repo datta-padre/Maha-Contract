@@ -31,11 +31,12 @@
 <div class="background-animation"></div>
 <div class="dashboard-layout">
     <aside class="sidebar">
-        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
+        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Maha</span> Contract</span></div>
         <nav class="sidebar-nav">
             <a href="/contractor/dashboard" class="active"><i data-lucide="shield-check"></i> KYC Overview</a>
             <a href="/contractor/marketplace"><i data-lucide="shopping-cart"></i> Tender Marketplace</a>
             <a href="/contractor/materials"><i data-lucide="shopping-bag"></i> Buy Material</a>
+            <a href="/contractor/live-tenders"><i data-lucide="file-text"></i> Live Tenders</a>
             <a href="/contractor/bids"><i data-lucide="briefcase"></i> My Bids</a>
             <a href="/contractor/profile"><i data-lucide="user"></i> My Profile</a>
             <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
@@ -325,65 +326,14 @@
                     <p class="kyc-step-hint">Review the plan, accept terms, then pay to submit.</p>
                 </div>
 
-                <div class="kyc-plan-card">
-                    <div class="kyc-plan-head">
-                        <h4>1-Year Contractor Access Plan</h4>
-                        <strong>₹12,775 + 18% GST</strong>
-                    </div>
-                    <p>Payment is split into milestone tranches while KYC is processed.</p>
-                    <ul class="kyc-plan-list">
-                        <li class="<%= isPaid('Advance') ? 'is-paid' : '' %>">
-                            <span>Step 1 · Advance verification deposit<%= isPaid('Advance') ? ' · Paid' : '' %></span>
-                            <strong>₹5,000 + GST</strong>
-                        </li>
-                        <li class="<%= isPaid('Intermediate') ? 'is-paid' : '' %>">
-                            <span>Step 2 · Intermediate active setup<%= isPaid('Intermediate') ? ' · Paid' : '' %></span>
-                            <strong>₹3,000 + GST</strong>
-                        </li>
-                        <li class="<%= isPaid('Final') ? 'is-paid' : '' %>">
-                            <span>Step 3 · Final access settlement<%= isPaid('Final') ? ' · Paid' : '' %></span>
-                            <strong>₹4,775 + GST</strong>
-                        </li>
-                    </ul>
-                    <div class="kyc-plan-now" id="kyc-plan-due">
-                        <% if (allDone) { %>
-                            <span>Payment status</span>
-                            <strong>All 3 payments completed</strong>
-                        <% } else if (v('paymentType') === 'Intermediate') { %>
-                            <span>Due today</span>
-                            <strong>₹3,540 <small>(₹3,000 + 18% GST)</small></strong>
-                        <% } else if (v('paymentType') === 'Final') { %>
-                            <span>Due today</span>
-                            <strong>₹5,635 <small>(₹4,775 + 18% GST)</small></strong>
-                        <% } else { %>
-                            <span>Due today</span>
-                            <strong>₹5,900 <small>(₹5,000 + 18% GST)</small></strong>
-                        <% } %>
-                    </div>
-                </div>
-
-                <div class="form-row" style="grid-template-columns: 1fr;">
-                    <div class="form-group">
-                        <label for="paymentType">Payment Type <span class="req">*</span></label>
-                        <select class="custom-select" id="paymentType" name="paymentType" required <%= allDone ? 'disabled' : '' %>>
-                            <option value="Advance" <%= selected('paymentType', 'Advance') || (!v('paymentType') ? 'selected' : '') %> <%= isPaid('Advance') ? 'disabled' : '' %>>Advance<%= isPaid('Advance') ? ' (Paid)' : '' %></option>
-                            <option value="Intermediate" <%= selected('paymentType', 'Intermediate') %> <%= isPaid('Intermediate') ? 'disabled' : '' %>>Intermediate<%= isPaid('Intermediate') ? ' (Paid)' : '' %></option>
-                            <option value="Final" <%= selected('paymentType', 'Final') %> <%= isPaid('Final') ? 'disabled' : '' %>>Final<%= isPaid('Final') ? ' (Paid)' : '' %></option>
-                        </select>
-                        <% if (allDone) { %>
-                            <input type="hidden" name="paymentType" value="Final">
-                        <% } %>
-                    </div>
-                </div>
-
                 <div class="kyc-agreements">
                     <label class="checkbox-group">
                         <input type="checkbox" name="acceptPrivacy" value="yes" <%= checked('acceptPrivacy') %> required>
-                        <span>I accept the BuildTender <strong>Privacy Policy</strong> regarding data storage.</span>
+                        <span>I accept the Maha Contract <strong>Privacy Policy</strong> regarding data storage.</span>
                     </label>
                     <label class="checkbox-group">
                         <input type="checkbox" name="acceptTerms" value="yes" <%= checked('acceptTerms') %> required>
-                        <span>I accept the BuildTender <strong>Terms & Conditions</strong> for dispute arbitration.</span>
+                        <span>I accept the Maha Contract <strong>Terms & Conditions</strong> for dispute arbitration.</span>
                     </label>
                 </div>
 
@@ -469,7 +419,7 @@
     var titles = {
         1: 'Step 1 of 3 · Profile',
         2: 'Step 2 of 3 · Documents',
-        3: 'Step 3 of 3 · Payment'
+        3: 'Step 3 of 3 · KYC Registration'
     };
 
     var steps = form.querySelectorAll('.kyc-step');
@@ -669,7 +619,7 @@
                 key: orderData.key,
                 amount: orderData.amount,
                 currency: orderData.currency,
-                name: 'BuildTender',
+                name: 'Maha Contract',
                 description: 'Contractor KYC — ' + paymentType + ' payment',
                 order_id: orderData.order_id,
                 prefill: {

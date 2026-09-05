@@ -1,42 +1,45 @@
 <%
     var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
 %>
-<aside class="sidebar bdg-sidebar">
-    <div class="bdg-topbar">
-        <a href="/budget-admin" class="bdg-topbar-brand">
-            <img class="bdg-topbar-icon" src="/images/logo.png" alt="Maha Contract">
-            <span class="bdg-topbar-title"><em>Budget</em>Admin</span>
+<aside class="sidebar ho-sidebar">
+    <div class="ho-topbar">
+        <a href="/houseowner/overview" class="ho-topbar-brand">
+            <img class="ho-topbar-icon" src="/images/logo.png" alt="Maha Contract">
+            <span class="ho-topbar-title notranslate"><em>Maha</em> Contract</span>
         </a>
-        <button type="button" class="bdg-menu-btn" aria-label="Toggle navigation" aria-expanded="false">
+        <button type="button" class="ho-menu-btn" aria-label="Toggle navigation" aria-expanded="false">
             <i data-lucide="menu"></i>
         </button>
     </div>
-    <nav class="sidebar-nav bdg-sidebar-nav">
-        <a href="/budget-admin" class="<%= page === 'overview' ? 'active' : '' %>">
+    <nav class="sidebar-nav ho-sidebar-nav">
+        <a href="/houseowner/overview" class="<%= page === 'overview' ? 'active' : '' %>">
             <i data-lucide="layout-dashboard"></i> Overview
         </a>
-        <a href="/budget-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
-            <i data-lucide="clock"></i> Pending Budget
+        <a href="/houseowner/post" class="<%= page === 'post' ? 'active' : '' %>">
+            <i data-lucide="file-plus"></i> Post Tender
         </a>
-        <a href="/budget-admin/completed" class="<%= page === 'completed' ? 'active' : '' %>">
-            <i data-lucide="check-circle"></i> Completed Budget
+        <a href="/houseowner/tenders" class="<%= page === 'tenders' ? 'active' : '' %>">
+            <i data-lucide="file-text"></i> Active Tenders
         </a>
-        <a href="/budget-admin/payments" class="<%= page === 'payments' ? 'active' : '' %>">
+        <a href="/houseowner/materials" class="<%= page === 'materials' ? 'active' : '' %>">
+            <i data-lucide="shopping-bag"></i> Material Shop
+        </a>
+        <a href="/houseowner/payments" class="<%= page === 'payments' ? 'active' : '' %>">
             <i data-lucide="wallet"></i> Payments
         </a>
-        <a href="/budget-admin/profile" class="<%= page === 'profile' ? 'active' : '' %>">
-            <i data-lucide="user"></i> Profile
+        <a href="/houseowner/profile" class="<%= page === 'profile' ? 'active' : '' %>">
+            <i data-lucide="user"></i> My Profile
         </a>
         <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
     </nav>
 </aside>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    var root = document.querySelector('.bdg-desk');
+    var root = document.querySelector('.ho-desk');
     if (!root) return;
 
-    var btn = root.querySelector('.bdg-menu-btn');
-    var nav = root.querySelector('.bdg-sidebar-nav');
+    var btn = root.querySelector('.ho-menu-btn');
+    var nav = root.querySelector('.ho-sidebar-nav');
     if (!btn || !nav) return;
 
     function setMenuOpen(open) {

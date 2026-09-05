@@ -6,19 +6,8 @@
     }
 %>
 <div class="background-animation"></div>
-<div class="dashboard-layout">
-    <aside class="sidebar">
-        <div class="logo sidebar-logo"><i data-lucide="hard-hat" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-        <nav class="sidebar-nav">
-            <a href="/houseowner/overview"><i data-lucide="layout-dashboard"></i> Overview Dashboard</a>
-            <a href="/houseowner/post" class="active"><i data-lucide="file-plus"></i> Post Tender Details</a>
-            <a href="/houseowner/tenders"><i data-lucide="file-text"></i> Active Tenders</a>
-            <a href="/houseowner/materials"><i data-lucide="shopping-bag"></i> Material Shop</a>
-            <a href="/houseowner/payments"><i data-lucide="wallet"></i> Payment & Receipts</a>
-            <a href="/houseowner/profile"><i data-lucide="user"></i> My Profile</a>
-            <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-        </nav>
-    </aside>
+<div class="dashboard-layout ho-desk">
+    <%- include('./_sidebar', { activePage: 'post' }) %>
 
     <main class="dashboard-content">
         <header class="dashboard-header">
@@ -654,7 +643,7 @@
             key: orderData.key,
             amount: orderData.amount,
             currency: orderData.currency,
-            name: 'BuildTender',
+            name: 'Maha Contract',
             description: 'Tender Platform Mapping Fee',
             order_id: orderData.order_id,
             prefill: { name: 'House Owner', email: 'owner@example.com', contact: '9999999999' },

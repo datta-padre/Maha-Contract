@@ -39,4 +39,4 @@ app.use("/budget-admin", budgetAdminRoutes);
 app.use("/materials-admin", materialsAdminRoutes);
 app.use("/tender-admin", tenderAdminRoutes);
 
-app.listen(port, () => console.log(`BuildTender frontend running on http://localhost:${port}`));
+app.listen(port, () => console.log(`Maha Contract frontend running on http://localhost:${port}`));

@@ -1,29 +1,34 @@
 <%- include('../partials/header') %>
 <div class="background-animation"></div>
-<div class="dashboard-layout">
+<div class="dashboard-layout bdg-desk">
     <%- include('./_sidebar') %>
 
     <main class="dashboard-content">
-        <header class="dashboard-header">
+        <header class="dashboard-header bdg-header">
             <div>
+                <p class="bdg-kicker">Budget Admin</p>
                 <h2>Budget Admin Profile</h2>
-                <p style="color: var(--text-muted); margin-top: 0.35rem;">Your desk account for tender budget estimation.</p>
+                <p class="bdg-subtitle">Your desk account for tender budget estimation.</p>
             </div>
         </header>
 
-        <section style="max-width:520px;background:rgba(15,23,42,0.6);border:1px solid var(--surface-border);border-radius:14px;padding:1.5rem;">
-            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;">
-                <div style="width:56px;height:56px;border-radius:14px;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="calculator" style="width:28px;height:28px;color:#38bdf8;"></i>
+        <section class="bdg-profile-card">
+            <div class="bdg-profile-head">
+                <div class="bdg-profile-avatar">
+                    <i data-lucide="calculator"></i>
                 </div>
                 <div>
-                    <strong style="font-size:1.1rem;">Budget Admin</strong>
-                    <div style="color:var(--text-muted);font-size:0.9rem;">Estimator desk role</div>
+                    <strong>Budget Admin</strong>
+                    <p>Estimator desk role</p>
                 </div>
             </div>
-            <p style="margin:0;color:var(--text-muted);font-size:0.92rem;line-height:1.6;">
+            <p class="bdg-profile-copy">
                 Use the sidebar to review pending tenders, submit cost estimates, upload PDF reports, and track house-owner platform payments.
             </p>
+            <div class="bdg-empty-actions" style="justify-content:flex-start;margin-top:1.25rem;">
+                <a href="/budget-admin/pending" class="btn-primary">Open pending queue</a>
+                <a href="/budget-admin" class="btn-secondary">Overview</a>
+            </div>
         </section>
     </main>
 </div>

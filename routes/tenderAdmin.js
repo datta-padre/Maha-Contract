@@ -362,4 +362,4 @@ router.get("/profile",async (req,res)=>{
     res.render('tender/profile');
 });
 
-module.exports = router;
+module.exports = router;    

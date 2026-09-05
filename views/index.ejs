@@ -3,8 +3,8 @@
 
     <nav class="navbar">
         <div class="logo">
-            <img src="/images/logo.jpg" alt="Logo" style="height: 65px; width: auto; border-radius: 8px; object-fit: contain;">
-            <span class="notranslate" style="font-size: 1.4rem;"><span>Build</span>Tender</span>
+            <img src="/images/logo.png" alt="Maha Contract Logo" style="height: 65px; width: auto; object-fit: contain;">
+            <span class="notranslate" style="font-size: 1.4rem;"><span>Maha</span> Contract</span>
         </div>
         <div class="nav-links">
             <a href="#how-it-works">How It Works</a>
@@ -50,7 +50,7 @@
     <!-- Ecosystem Features Section -->
     <section class="features-section" style="padding: 5rem 5%; background: var(--surface); border-top: 1px solid var(--surface-border); border-bottom: 1px solid var(--surface-border);">
         <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
-            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;"><span class="highlight">Three Pillars</span> of BuildTender</h2>
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;"><span class="highlight">Three Pillars</span> of Maha Contract</h2>
             <p style="color: var(--text-muted); margin-bottom: 4rem; max-width: 600px; margin-left: auto; margin-right: auto;">Our ecosystem is rigorously divided into three distinct modules ensuring 100% accountability.</p>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
@@ -65,8 +65,8 @@
                 
                 <!-- Pillar 2 -->
                 <div style="background: var(--background); padding: 2rem; border-radius: 16px; border: 1px solid var(--surface-border); text-align: left;">
-                    <div style="background: rgba(56, 189, 248, 0.1); width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                        <i data-lucide="file-check-2" style="color: #38bdf8; width: 30px; height: 30px;"></i>
+                    <div style="background: rgba(252, 96, 37, 0.12); width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                        <i data-lucide="file-check-2" style="color: #FC6025; width: 30px; height: 30px;"></i>
                     </div>
                     <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Private CAD Estimation</h3>
                     <p style="color: var(--text-muted); line-height: 1.6;">Your residential CAD files are securely parsed by our Estimator Bots. We establish a financial baseline, ensuring contractors cannot overcharge you.</p>
@@ -163,7 +163,7 @@
                 <div style="flex: 1; min-width: 300px;">
                     <div style="display: inline-block; padding: 0.5rem 1rem; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-radius: 20px; font-weight: bold; margin-bottom: 1rem; border: 1px solid rgba(34, 197, 94, 0.2);">Zero Fraud Guarantee</div>
                     <h2 style="font-size: 2.8rem; margin-bottom: 1.5rem;">The <span style="color: #22c55e;">Verification</span> Firewall.</h2>
-                    <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">BuildTender isn't just a marketplace; it is a closed, heavily audited ecosystem. Unverified workers are systematically barred from interacting with your tender.</p>
+                    <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">Maha Contract isn't just a marketplace; it is a closed, heavily audited ecosystem. Unverified workers are systematically barred from interacting with your tender.</p>
                     <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 1.5rem;">
                         <li style="display: flex; gap: 1rem;">
                             <i data-lucide="shield-check" style="color: #22c55e; flex-shrink: 0; width: 28px; height: 28px;"></i>
@@ -203,13 +203,13 @@
         </div>
     </section>
 
-    <!-- Global Map Call to Action -->
-    <section style="padding: 0; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(0, 0, 0, 0.95)); border-top: 1px solid var(--surface-border); position: relative; overflow: hidden;">
-        <div style="position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.1; background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 20px 20px;"></div>
-        <div style="max-width: 800px; margin: 0 auto; text-align: center; padding: 6rem 5%; position: relative; z-index: 2;">
-            <h2 style="font-size: 3rem; margin-bottom: 1rem;">Ready to break ground?</h2>
-            <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2.5rem;">Join the thousands of homeowners and certified builders currently operating securely within our localized 30km clusters.</p>
-            <button class="btn-primary large" onclick="openModal('registerModal')" style="font-size: 1.2rem; padding: 1.2rem 3rem; border-radius: 50px;">Create Free Account</button>
+    <!-- Global Call to Action -->
+    <section class="home-cta">
+        <div class="home-cta-pattern" aria-hidden="true"></div>
+        <div class="home-cta-inner">
+            <h2>Ready to break ground?</h2>
+            <p>Join the thousands of homeowners and certified builders currently operating securely within our localized 30km clusters.</p>
+            <button type="button" class="btn-primary home-cta-btn" onclick="openModal('registerModal')">Create Free Account</button>
         </div>
     </section>
 
@@ -218,16 +218,15 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('loginModal')">&times;</span>
             <h2>Welcome Back!</h2>
-            <p>Access your BuildTender account.</p>
+            <p>Access your Maha Contract account.</p>
 
             <form onsubmit="event.preventDefault(); goToDashboard('login');">
                 <div class="form-group">
                     <label>Account Type</label>
-                    <select id="loginRole" style="width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--surface-border); border-radius: 8px; color: white;">
+                    <select id="loginRole">
                         <option value="houseowner">House Owner</option>
                         <option value="contractor">Contractor</option>
                         <option value="vendor">System Vendor</option>
-
                     </select>
                 </div>
 
@@ -250,7 +249,7 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('registerModal')">&times;</span>
             <h2>Create Account</h2>
-            <p>Join the BuildTender ecosystem today.</p>
+            <p>Join the Maha Contract ecosystem today.</p>
             
             <div class="role-selector">
                 <div class="role-card active" onclick="selectRole(this, 'houseowner')">
@@ -268,11 +267,6 @@
                     <span>System Vendor</span>
                     <small>Sell Materials</small>
                 </div>
-                <div class="role-card" onclick="selectRole(this, 'user')">
-                    <i data-lucide="user"></i>
-                    <span>User</span>
-                    <small>General Access</small>
-                </div>
             </div>
 
             <form id="registerForm" onsubmit="event.preventDefault(); goToDashboard('register');">
@@ -288,7 +282,7 @@
                     <label>Password</label>
                     <input type="password" id="regPass" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn-primary full-width">Create Account & Go to Dashboard</button>
+                <button type="submit" class="btn-primary full-width">Create Account</button>
             </form>
         </div>
     </div>

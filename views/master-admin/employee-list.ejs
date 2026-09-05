@@ -314,13 +314,13 @@
 
         function openPrintView(forPdf) {
             var matrix = tableMatrix();
-            var html = '<!DOCTYPE html><html><head><title>BuildTender Staff</title>';
+            var html = '<!DOCTYPE html><html><head><title>Maha Contract Staff</title>';
             html += '<style>body{font-family:Arial,sans-serif;padding:24px;color:#111}';
             html += 'h1{font-size:18px;margin:0 0 4px}p{color:#555;margin:0 0 16px;font-size:13px}';
             html += 'table{width:100%;border-collapse:collapse;font-size:12px}';
             html += 'th,td{border:1px solid #ccc;padding:8px;text-align:left;vertical-align:top}';
             html += 'th{background:#f3f4f6}</style></head><body>';
-            html += '<h1>BuildTender — Staff Directory</h1>';
+            html += '<h1>Maha Contract — Staff Directory</h1>';
             html += '<p>' + (forPdf ? 'Save as PDF from the print dialog.' : 'Print preview') + ' · ' + new Date().toLocaleString('en-IN') + '</p>';
             html += '<table><thead><tr>';
             matrix[0].forEach(function (h) { html += '<th>' + h + '</th>'; });
