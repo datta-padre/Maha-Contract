@@ -21,10 +21,38 @@ const razorpay = new Razorpay({
 });
 
 
-router.get('/overview',houseownerOnly, async (req, res) => {
-    var result = await exe(`SELECT COUNT(tender_id) as total_tenders FROM tenders`);
-        res.render('houseowner/overview', { total_tenders: result[0].total_tenders });
-    });
+router.get('/overview', houseownerOnly, async (req, res) => {
+    try {
+        const rows = await db(
+            `SELECT
+                COUNT(*) AS total_tenders,
+                SUM(CASE WHEN LOWER(COALESCE(payment_status,'')) = 'paid' THEN 1 ELSE 0 END) AS paid_tenders,
+                SUM(CASE WHEN LOWER(COALESCE(payment_status,'')) = 'paid' THEN COALESCE(payment_amount,0) ELSE 0 END) AS fees_paid,
+                SUM(CASE WHEN LOWER(COALESCE(budget_status,'')) IN ('estimated','approved') THEN 1 ELSE 0 END) AS estimated_tenders
+             FROM tenders
+             WHERE user_id = ?`,
+            [req.user_id]
+        );
+        const stats = (Array.isArray(rows) && rows[0]) ? rows[0] : {};
+        res.render('houseowner/overview', {
+            activePage: 'overview',
+            total_tenders: Number(stats.total_tenders || 0),
+            paid_tenders: Number(stats.paid_tenders || 0),
+            fees_paid: Number(stats.fees_paid || 0),
+            estimated_tenders: Number(stats.estimated_tenders || 0)
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('houseowner/overview', {
+            activePage: 'overview',
+            total_tenders: 0,
+            paid_tenders: 0,
+            fees_paid: 0,
+            estimated_tenders: 0,
+            error: 'Could not load overview metrics.'
+        });
+    }
+});
 
 router.get('/post', houseownerOnly, (req, res) => {
     res.render('houseowner/post', {
@@ -35,14 +63,33 @@ router.get('/post', houseownerOnly, (req, res) => {
 });
 
 router.get('/tenders', houseownerOnly, async(req, res) => {
+    try {
+        // Only fetch tenders created by this houseowner.
+        var tenders = await exe(
+            `SELECT * FROM tenders WHERE user_id = ? ORDER BY tender_id DESC`,
+            [req.user_id]
+        );
+        if (!Array.isArray(tenders)) tenders = [];
 
-    var sql = `SELECT * FROM tenders  `
-    var value = [req.user_id]
+        // Optional: owner details (some templates don't use it, but keep it safe).
+        var owners = await exe(
+            `SELECT * FROM users WHERE user_id = ? LIMIT 1`,
+            [req.user_id]
+        );
+        var owner_details = (Array.isArray(owners) && owners[0]) ? owners[0] : {};
 
-     var data = await exe(sql,value)
+        console.log("owner_details",owner_details);
+        console.log("tenders",tenders);
 
-    if (!Array.isArray(data)) data = [];
-    res.render('houseowner/tenders', { tenders: data });
+        res.render('houseowner/tenders', {
+            tenders: tenders,
+            owner_details: owner_details,
+            notice: req.query.notice || ''
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('houseowner/tenders', { tenders: [], owner_details: {}, notice: '' });
+    }
 });
 
 router.get('/materials', houseownerOnly, async (req, res) => {

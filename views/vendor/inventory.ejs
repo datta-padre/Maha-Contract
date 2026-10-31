@@ -6,7 +6,7 @@
 <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
 
 <style>
-  /* Bridge Bootstrap with BuildTender theme */
+  /* Bridge Bootstrap with MAHA CONTRACT theme */
   .inventory-page {
     color: var(--text-main);
   }
@@ -313,18 +313,8 @@
 </style>
 
 <div class="background-animation"></div>
-<div class="dashboard-layout inventory-page">
-  <aside class="sidebar">
-    <div class="logo sidebar-logo"><i data-lucide="building-2" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-    <nav class="sidebar-nav">
-      <a href="/vendor/dashboard"><i data-lucide="layout-dashboard"></i> Overview</a>
-      <a href="/vendor/inventory" class="active"><i data-lucide="list"></i> My Inventory</a>
-      <a href="/vendor/orders"><i data-lucide="truck"></i> Live Orders</a>
-      <a href="/vendor/payments"><i data-lucide="wallet"></i> Payments</a>
-      <a href="/vendor/profile"><i data-lucide="user"></i> Store Profile</a>
-      <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
-    </nav>
-  </aside>
+<div class="dashboard-layout vendor-desk inventory-page">
+  <%- include('_sidebar', { active: 'inventory' }) %>
 
   <main class="dashboard-content">
     <header class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">

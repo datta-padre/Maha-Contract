@@ -1,0 +1,393 @@
+<%- include('../partials/header') %>
+<%
+    var tender = (typeof tender !== 'undefined' && tender) ? tender : {};
+    var pageError = (typeof error !== 'undefined' && error) ? String(error) : '';
+
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function escAttr(val) {
+        return String(val || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    function viewDoc(file, label) {
+        var name = (file === undefined || file === null) ? '' : String(file).trim();
+        var text = escAttr(label || 'document');
+        if (!name || name === '—') {
+            return '<span class="ba-doc-btn ba-doc-btn-off"><i data-lucide="file-x"></i> ' + text + '</span>';
+        }
+        return '<a class="ba-doc-btn" href="/tenders/' + encodeURIComponent(name) + '" target="_blank" rel="noopener" title="' + escAttr(name) + '"><i data-lucide="file-text"></i> ' + text + '</a>';
+    }
+    function viewLocation(loc) {
+        var location = (loc === undefined || loc === null) ? '' : String(loc).trim();
+        if (!location || location === '—') {
+            return '<span class="ba-doc-btn ba-doc-btn-off"><i data-lucide="map-pin"></i> Location</span>';
+        }
+        return '<a class="ba-doc-btn" href="https://www.google.com/maps?q=' + encodeURIComponent(location) + '" target="_blank" rel="noopener"><i data-lucide="map-pin"></i> Location</a>';
+    }
+    function payBadge(status) {
+        var s = String(status || 'pending').toLowerCase();
+        if (s === 'paid') return { cls: 'is-ok', label: 'Paid' };
+        if (s === 'failed') return { cls: 'is-bad', label: 'Failed' };
+        return { cls: 'is-warn', label: 'Unpaid' };
+    }
+    function budgetBadge(status) {
+        var s = String(status || 'pending').toLowerCase();
+        if (s === 'approved') return { cls: 'is-ok', label: 'Approved' };
+        if (s === 'estimated') return { cls: 'is-info', label: 'Estimated' };
+        return { cls: 'is-warn', label: 'Pending' };
+    }
+
+    var completionValue = '';
+    if (tender.estimated_completion_date) {
+        var d = new Date(tender.estimated_completion_date);
+        if (!isNaN(d.getTime())) completionValue = d.toISOString().slice(0, 10);
+    }
+
+    var pay = payBadge(tender.payment_status);
+    var budget = budgetBadge(tender.budget_status);
+    var submitted = tender.created_at ? new Date(tender.created_at).toLocaleString('en-IN') : '—';
+    var errorText = '';
+    if (pageError === 'missing') errorText = 'Estimated cost and completion date are required.';
+    else if (pageError === 'save') errorText = 'Could not save this estimate. Please try again.';
+    else if (pageError) errorText = pageError;
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout bdg-desk">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content ba-estimate-page">
+        <header class="dashboard-header bdg-header ba-estimate-header">
+            <div class="ba-estimate-heading">
+                <p class="bdg-kicker">Budget Admin</p>
+                <h2>Estimate Tender <span class="ba-tender-id">#<%= tender.tender_id || '—' %></span></h2>
+                <p class="bdg-subtitle">Set system cost, completion target, and optional PDF report.</p>
+                <div class="ba-status-row">
+                    <span class="bdg-pill <%= budget.cls %>"><%= budget.label %></span>
+                    <span class="bdg-pill <%= pay.cls %>"><%= pay.label %></span>
+                    <span class="ba-status-meta"><%= money(tender.payment_amount) %> fee</span>
+                </div>
+            </div>
+            <a href="/budget-admin/pending" class="btn-primary bdg-header-cta">
+                <i data-lucide="arrow-left"></i> Back to pending
+            </a>
+        </header>
+
+        <% if (errorText) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Could not save</strong><p><%= errorText %></p></div>
+        </div>
+        <% } %>
+
+        <div class="ba-estimate-grid">
+            <section class="bdg-panel ba-estimate-panel">
+                <div class="ba-panel-head">
+                    <h3 class="ba-panel-title is-pending">Budget form</h3>
+                    <p class="ba-panel-hint">Required fields marked for estimation.</p>
+                </div>
+
+                <form method="post" action="/budget-admin/estimate/<%= tender.tender_id %>" enctype="multipart/form-data" class="ba-estimate-form">
+                    <div class="ba-form-row">
+                        <label class="ba-field">
+                            <span>System estimated cost (₹) *</span>
+                            <input type="number" name="estimatedCost" required min="1" step="1" placeholder="e.g. 2400000"
+                                   value="<%= tender.estimated_cost || '' %>">
+                        </label>
+                        <label class="ba-field">
+                            <span>Completion target date *</span>
+                            <input type="date" name="completionDate" required value="<%= completionValue %>">
+                        </label>
+                    </div>
+
+                    <label class="ba-field">
+                        <span>Budget notes</span>
+                        <textarea name="budgetNotes" rows="4" placeholder="Material assumptions, contingencies, exclusions…"><%= tender.budget_notes || '' %></textarea>
+                    </label>
+
+                    <label class="ba-field">
+                        <span>Budget report PDF <%= tender.budget_report ? '(optional replace)' : '(optional)' %></span>
+                        <input type="file" name="budgetReport" accept=".pdf,application/pdf" class="ba-file-input">
+                        <% if (tender.budget_report) { %>
+                        <a class="ba-current-report" href="/budget-admin/view-report?file=<%= encodeURIComponent(tender.budget_report) %>" target="_blank" rel="noopener">
+                            <i data-lucide="file-text"></i> Current report: <%= tender.budget_report %>
+                        </a>
+                        <% } %>
+                    </label>
+
+                    <div class="ba-form-actions">
+                        <button type="submit" class="bdg-btn bdg-btn-primary ba-submit-btn">
+                            <i data-lucide="send"></i>
+                            Submit &amp; mark estimated
+                        </button>
+                        <a href="/budget-admin/pending" class="bdg-btn bdg-btn-ghost">Cancel</a>
+                    </div>
+                </form>
+            </section>
+
+            <section class="bdg-panel ba-estimate-panel ba-brief-panel" id="baBriefPanel">
+                <div class="ba-panel-head ba-brief-head-desktop">
+                    <h3 class="ba-panel-title">Tender brief</h3>
+                    <p class="ba-panel-hint">Submitted <%= submitted %></p>
+                </div>
+
+                <button type="button" class="ba-brief-toggle" id="baBriefToggle" aria-expanded="true" aria-controls="baBriefBody">
+                    <div class="ba-panel-head">
+                        <h3 class="ba-panel-title">Tender brief</h3>
+                        <p class="ba-panel-hint">Submitted <%= submitted %></p>
+                    </div>
+                    <i data-lucide="chevron-down" class="ba-brief-chevron"></i>
+                </button>
+
+                <div class="ba-brief" id="baBriefBody">
+                    <div class="ba-brief-block">
+                        <p class="ba-label">House owner</p>
+                        <strong><%= safe(tender.owner_name) %></strong>
+                        <div class="bdg-sub"><%= safe(tender.owner_email) %></div>
+                        <div class="bdg-sub"><%= safe(tender.owner_mobile) %></div>
+                    </div>
+
+                    <div class="ba-brief-grid">
+                        <div>
+                            <p class="ba-label">Plot area</p>
+                            <strong><%= safe(tender.plotArea) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Construction code</p>
+                            <strong><%= safe(tender.constructionCode) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">BHK</p>
+                            <strong><%= safe(tender.bhk) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Floors</p>
+                            <strong><%= safe(tender.floors) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Soil</p>
+                            <strong><%= safe(tender.soilType) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Owner budget</p>
+                            <strong class="bdg-cost"><%= money(tender.budget) %></strong>
+                        </div>
+                    </div>
+
+                    <div class="ba-brief-block">
+                        <p class="ba-label">Location</p>
+                        <strong><%= safe(tender.plotLocation) %></strong>
+                    </div>
+
+                    <div class="ba-brief-grid">
+                        <div>
+                            <p class="ba-label">Materials provided</p>
+                            <strong><%= safe(tender.materialsProvided) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Finalized plan</p>
+                            <strong><%= safe(tender.finalizedPlan) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Construction time</p>
+                            <strong><%= safe(tender.constructionTime) %></strong>
+                        </div>
+                        <div>
+                            <p class="ba-label">Boundary wall</p>
+                            <strong><%= safe(tender.boundaryWallType) %></strong>
+                        </div>
+                    </div>
+
+                    <div class="ba-brief-block">
+                        <p class="ba-label">Ancillary / external works</p>
+                        <p class="ba-note"><%= safe(tender.ancillary_requirements) %></p>
+                        <p class="ba-note"><%= safe(tender.externalWorks) %></p>
+                    </div>
+
+                    <div class="ba-brief-block">
+                        <p class="ba-label">Special instructions</p>
+                        <p class="ba-note"><%= safe(tender.specialInstructions) %></p>
+                    </div>
+
+                    <div class="ba-brief-block">
+                        <p class="ba-label" style="margin-bottom:0.55rem;">Documents</p>
+                        <div class="ba-doc-list">
+                            <button type="button" class="ba-doc-btn ba-doc-btn-a4"
+                                onclick="window.openTenderA4 && window.openTenderA4(this)"
+                                data-tender-id="<%= escAttr(tender.tender_id) %>"
+                                data-owner-name="<%= escAttr(safe(tender.owner_name)) %>"
+                                data-owner-email="<%= escAttr(safe(tender.owner_email)) %>"
+                                data-owner-mobile="<%= escAttr(safe(tender.owner_mobile)) %>"
+                                data-construction-code="<%= escAttr(safe(tender.constructionCode)) %>"
+                                data-plot-area="<%= escAttr(safe(tender.plotArea)) %>"
+                                data-soil-type="<%= escAttr(safe(tender.soilType)) %>"
+                                data-location="<%= escAttr(safe(tender.plotLocation)) %>"
+                                data-bhk="<%= escAttr(safe(tender.bhk)) %>"
+                                data-floors="<%= escAttr(safe(tender.floors)) %>"
+                                data-budget="<%= escAttr(money(tender.budget)) %>"
+                                data-materials-provided="<%= escAttr(safe(tender.materialsProvided)) %>"
+                                data-finalized-plan="<%= escAttr(safe(tender.finalizedPlan)) %>"
+                                data-ancillary-requirements="<%= escAttr(safe(tender.ancillary_requirements)) %>"
+                                data-external-works="<%= escAttr(safe(tender.externalWorks)) %>"
+                                data-boundary-wall-type="<%= escAttr(safe(tender.boundaryWallType)) %>"
+                                data-construction-time="<%= escAttr(safe(tender.constructionTime)) %>"
+                                data-special-instructions="<%= escAttr(safe(tender.specialInstructions)) %>"
+                                data-architectural-plan="<%= escAttr(tender.architectural_plan) %>"
+                                data-plot-documents="<%= escAttr(tender.Plot_documents) %>"
+                                data-house-owner-digital-signature="<%= escAttr(tender.house_owner_digital_signature) %>"
+                                data-payment-status="<%= escAttr(safe(tender.payment_status)) %>"
+                                data-payment-amount="<%= escAttr(money(tender.payment_amount)) %>"
+                                data-created-at="<%= escAttr(submitted) %>">
+                                <i data-lucide="eye"></i> View A4
+                            </button>
+                            <%- viewDoc(tender.architectural_plan, 'Architectural plan') %>
+                            <%- viewDoc(tender.Plot_documents, 'Plot documents') %>
+                            <%- viewDoc(tender.house_owner_digital_signature, 'Signature') %>
+                            <%- viewLocation(tender.plotLocation) %>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    (function () {
+        var toggle = document.getElementById('baBriefToggle');
+        var panel = document.getElementById('baBriefPanel');
+        var body = document.getElementById('baBriefBody');
+        if (!toggle || !panel || !body) return;
+
+        function setOpen(open) {
+            panel.classList.toggle('is-collapsed', !open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            var icon = toggle.querySelector('.ba-brief-chevron');
+            if (icon) {
+                icon.setAttribute('data-lucide', open ? 'chevron-up' : 'chevron-down');
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        // Collapse brief by default on phone so the form is first
+        if (window.innerWidth <= 768) setOpen(false);
+
+        toggle.addEventListener('click', function () {
+            setOpen(panel.classList.contains('is-collapsed'));
+        });
+    })();
+</script>
+<script>
+    window.openTenderA4 = function (btn) {
+        if (!btn || !btn.dataset) return;
+        var d = btn.dataset;
+
+        var w = window.open('about:blank', 'TenderA4_' + (d.tenderId || ''), 'width=980,height=720');
+        if (!w) {
+            alert('Pop-up blocked. Please allow pop-ups to view the A4 tender page.');
+            return;
+        }
+
+        function fileHref(name) {
+            var n = String(name || '').trim();
+            if (!n || n === '—') return '';
+            return '/tenders/' + encodeURIComponent(n);
+        }
+        function docButton(file, label) {
+            var href = fileHref(file);
+            if (!href) return '<span class="btn off">' + label + '</span>';
+            return '<a class="btn" href="' + href + '" target="_blank" rel="noopener" title="' + label + '">' + label + '</a>';
+        }
+        function locButton(loc) {
+            var n = String(loc || '').trim();
+            if (!n || n === '—') return '<span class="btn off">Location</span>';
+            return '<a class="btn" href="https://www.google.com/maps?q=' + encodeURIComponent(n) + '" target="_blank" rel="noopener">Location</a>';
+        }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8" />';
+        html += '<title>Tender A4</title>';
+        html += '<style>';
+        html += '@page{size:A4;margin:18mm;}';
+        html += 'body{font-family:Arial,sans-serif;color:#111;}';
+        html += '.h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}';
+        html += '.t{font-size:18px;font-weight:700;margin:0;}';
+        html += '.sub{color:#555;font-size:13px;margin:4px 0 0;}';
+        html += '.sec{margin-top:16px;}';
+        html += '.sec-title{font-weight:700;color:#444;font-size:13px;margin:0 0 8px;}';
+        html += '.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}';
+        html += '.card{border:1px solid #ddd;border-radius:10px;padding:10px;}';
+        html += '.k{color:#666;font-size:12px;margin-bottom:4px;}';
+        html += '.v{font-size:13px;word-break:break-word;}';
+        html += 'table{width:100%;border-collapse:collapse;}';
+        html += 'th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top;}';
+        html += 'th{background:#f3f4f6;font-size:12px;}';
+        html += '.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}';
+        html += '.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;text-decoration:none;font-size:13px;font-weight:600;cursor:pointer;}';
+        html += '.btn.off{background:#f3f4f6;border-color:#ddd;color:#9ca3af;cursor:not-allowed;}';
+        html += '.btn.print{background:#111;color:#fff;border-color:#111;}';
+        html += '@media print{.btns{display:none;}}';
+        html += '</style></head><body>';
+
+        html += '<div class="h">';
+        html += '<div><p class="t">Maha Contract — Tender #' + (d.tenderId || '') + '</p>';
+        html += '<p class="sub">Owner + Tender Information · ' + new Date().toLocaleString('en-IN') + '</p></div>';
+        html += '<div style="color:#666;font-size:12px;">A4 View</div>';
+        html += '</div>';
+
+        html += '<div class="sec"><div class="sec-title">Owner</div>';
+        html += '<table><tbody>';
+        html += '<tr><th style="width:30%;">Name</th><td>' + (d.ownerName || '—') + '</td></tr>';
+        html += '<tr><th>Email</th><td>' + (d.ownerEmail || '—') + '</td></tr>';
+        html += '<tr><th>Mobile</th><td>' + (d.ownerMobile || '—') + '</td></tr>';
+        html += '</tbody></table></div>';
+
+        html += '<div class="sec"><div class="sec-title">Tender Details</div><div class="grid">';
+        html += '<div class="card"><div class="k">Construction Code</div><div class="v">' + (d.constructionCode || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Plot Area</div><div class="v">' + (d.plotArea || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Soil Type</div><div class="v">' + (d.soilType || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Location</div><div class="v">' + (d.location || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">BHK / Floors</div><div class="v">' + (d.bhk || '—') + ' · ' + (d.floors || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Owner Budget</div><div class="v">' + (d.budget || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div class="sec"><div class="sec-title">Materials & Plan</div><div class="grid">';
+        html += '<div class="card"><div class="k">Materials Provided</div><div class="v">' + (d.materialsProvided || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Finalized Plan</div><div class="v">' + (d.finalizedPlan || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Construction Time</div><div class="v">' + (d.constructionTime || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Submitted</div><div class="v">' + (d.createdAt || '—') + '</div></div>';
+        html += '</div></div>';
+
+        html += '<div class="sec"><div class="sec-title">Requirements & Instructions</div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">Ancillary Requirements</div><div class="v">' + (d.ancillaryRequirements || '—') + '</div></div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">External Works</div><div class="v">' + (d.externalWorks || '—') + '</div></div>';
+        html += '<div class="card" style="margin-bottom:10px;"><div class="k">Boundary Wall Type</div><div class="v">' + (d.boundaryWallType || '—') + '</div></div>';
+        html += '<div class="card"><div class="k">Special Instructions</div><div class="v">' + (d.specialInstructions || '—') + '</div></div>';
+        html += '</div>';
+
+        html += '<div class="btns">';
+        html += docButton(d.architecturalPlan, 'Architectural plan');
+        html += docButton(d.plotDocuments, 'Plot documents');
+        html += docButton(d.houseOwnerDigitalSignature, 'Signature');
+        html += locButton(d.location);
+        html += '<button class="btn print" onclick="window.print()">Print</button>';
+        html += '<button class="btn" onclick="window.close()">Close</button>';
+        html += '</div></body></html>';
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+    };
+</script>

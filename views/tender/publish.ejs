@@ -1,0 +1,493 @@
+<%- include('../partials/header') %>
+<%
+    var published = (typeof publishedTenders !== 'undefined' && Array.isArray(publishedTenders))
+        ? publishedTenders
+        : ((typeof tenders !== 'undefined' && Array.isArray(tenders)) ? tenders : []);
+    var contractors = (typeof contractors !== 'undefined' && Array.isArray(contractors)) ? contractors : [];
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout">
+    <%- include('./_sidebar', { activePage: 'publish' }) %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <h2>Live Tenders</h2>
+                <p style="color: var(--text-muted); margin-top: 0.35rem;">Marketplace listings currently visible to contractors.</p>
+            </div>
+            <div class="header-highlight">
+                <span>Live</span>
+                <strong><%= published.length %></strong>
+            </div>
+        </header>
+
+        <% if (typeof notice !== 'undefined' && notice) { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
+            <i data-lucide="check-circle"></i>
+            <div>
+                <strong><%= notice === 'published' ? 'Tender published' : 'Updated' %></strong>
+                <p style="margin:0;color:var(--text-muted);">Live list refreshed.</p>
+            </div>
+        </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom:1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="tp-stats">
+            <article class="stat-card tp-stat">
+                <i data-lucide="radio" style="color:#a855f7;"></i>
+                <h3><%= published.length %></h3>
+                <p>Live now</p>
+            </article>
+            <article class="stat-card tp-stat">
+                <i data-lucide="users" style="color:#38bdf8;"></i>
+                <h3>Open</h3>
+                <p>Marketplace status</p>
+            </article>
+            <article class="stat-card tp-stat">
+                <i data-lucide="handshake" style="color:#22c55e;"></i>
+                <h3><%= contractors.length %></h3>
+                <p>Approved contractors</p>
+            </article>
+        </div>
+
+        <% if (!published.length) { %>
+        <section class="tp-empty">
+            <div class="tp-empty-glow" aria-hidden="true"></div>
+            <div class="tp-empty-icon"><i data-lucide="radio"></i></div>
+            <p class="tp-empty-kicker">Live desk</p>
+            <h3>No live tenders yet</h3>
+            <p class="tp-empty-copy">Publish from the pending queue to make tenders visible in the contractor marketplace.</p>
+            <div class="tp-empty-actions">
+                <a href="/tender-admin/pending" class="tp-btn tp-btn-primary"><i data-lucide="clock"></i> Open pending</a>
+                <a href="/tender-admin" class="tp-btn"><i data-lucide="layout-dashboard"></i> Overview</a>
+            </div>
+        </section>
+        <% } else { %>
+        <div class="tp-panel">
+            <div class="tp-toolbar">
+                <div class="tp-search">
+                    <i data-lucide="search"></i>
+                    <input id="liveSearch" type="search" placeholder="Search tender, owner, code...">
+                </div>
+                <span class="tp-count" id="liveCount"><%= published.length %> records</span>
+            </div>
+            <div class="tp-table-wrap">
+                <table id="liveTable" class="tp-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Project</th>
+                            <th>Estimated cost</th>
+                            <th>Published</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% published.forEach(function (t, i) {
+                            var publishedAt = t.published_at ? new Date(t.published_at).toLocaleString('en-IN') : '—';
+                            var hay = [t.tender_id, t.owner_name, t.owner_email, t.constructionCode, t.plotLocation].join(' ').toLowerCase();
+                        %>
+                        <tr data-search="<%= hay %>">
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="tp-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="tp-sub"><%= safe(t.owner_email) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.bhk) %> · <%= safe(t.floors) %> fl</strong>
+                                <div class="tp-sub"><%= safe(t.plotLocation) %></div>
+                            </td>
+                            <td><span class="tp-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><%= publishedAt %></td>
+                            <td><span class="tp-pill is-live"><%= t.tender_status %></span></td>
+                            <td>
+                                <div class="tp-actions">
+                                    <button type="button" class="tp-btn tp-btn-primary js-assign-open"
+                                        data-tender-id="<%= t.tender_id %>"
+                                        data-owner="<%= safe(t.owner_name) %>"
+                                        data-code="<%= safe(t.constructionCode) %>"
+                                        data-cost="<%= money(t.estimated_cost) %>">
+                                        <i data-lucide="handshake"></i> Assign
+                                    </button>
+                                    <form method="post" action="/tender-admin/unpublish/<%= t.tender_id %>" style="margin:0;">
+                                        <button type="submit" class="tp-btn tp-btn-warn" onclick="return confirm('Move this tender back to pending?');">
+                                            <i data-lucide="undo-2"></i> Unpublish
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<div id="assignModal" class="modal" aria-hidden="true">
+    <div class="modal-content tp-assign-modal">
+        <span class="close js-assign-close" aria-label="Close">&times;</span>
+        <h2>Assign Contractor</h2>
+        <p id="assignModalSub">Search and select a contractor for this tender.</p>
+
+        <form id="assignForm" method="post" action="">
+            <div class="tp-assign-picker">
+                <div class="tp-assign-picker-left">
+                    <label class="tp-assign-label" for="contractorSearch">Search</label>
+                    <div class="tp-assign-search">
+                        <i data-lucide="search"></i>
+                        <input id="contractorSearch" type="search" placeholder="Type name / email / mobile...">
+                    </div>
+
+                    <input type="hidden" name="contractor_id" id="contractorId" value="">
+                    <p class="tp-contractor-count" id="contractorCount"></p>
+                </div>
+
+                <div class="tp-contractor-list" id="contractorList">
+                    <% if (!contractors.length) { %>
+                    <p class="tp-contractor-empty">No approved contractors found. Verify contractor KYC first.</p>
+                    <% } else { %>
+                    <% contractors.forEach(function (c) {
+                        var cid = c.user_id || c.contractor_id || '';
+                        var cname = c.username || c.full_name || c.contractor_name || '';
+                        var cemail = c.email || c.contractor_email || '';
+                        var cmobile = c.mobile || c.phone || c.contractor_mobile || '';
+                        var hay = [cname, cemail, cmobile, cid].join(' ').toLowerCase();
+                    %>
+                    <button type="button" class="tp-contractor-item"
+                        data-id="<%= cid %>"
+                        data-name="<%= safe(cname) %>"
+                        data-email="<%= safe(cemail) %>"
+                        data-mobile="<%= safe(cmobile) %>"
+                        data-search="<%= hay %>">
+                        <strong><%= safe(cname) %></strong>
+                        <span><%= safe(cemail) %></span>
+                        <small><%= safe(cmobile) %></small>
+                    </button>
+                    <% }) %>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="tp-assign-actions">
+                <button type="button" class="tp-btn js-assign-close">Cancel</button>
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i data-lucide="check"></i> Confirm assign
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.tp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.25rem}
+.tp-stat{margin:0}
+.tp-empty{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;padding:3.25rem 2rem;border-radius:18px;border:1px solid rgba(168,85,247,.2);background:radial-gradient(circle at top,rgba(168,85,247,.12),transparent 42%),rgba(15,23,42,.62)}
+.tp-empty-glow{position:absolute;inset:auto -20% -40% auto;width:280px;height:280px;background:radial-gradient(circle,rgba(168,85,247,.16),transparent 70%);pointer-events:none}
+.tp-empty-icon{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);color:#c084fc}
+.tp-empty-icon i{width:34px;height:34px}
+.tp-empty-kicker{margin:0 0 .4rem;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c084fc}
+.tp-empty h3{margin:0 0 .55rem;font-family:'Outfit',sans-serif;font-size:1.65rem;color:#fff}
+.tp-empty-copy{max-width:460px;margin:0;color:var(--text-muted);line-height:1.6}
+.tp-empty-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.65rem;margin-top:1.35rem}
+.tp-panel{background:rgba(15,23,42,.55);border:1px solid var(--surface-border);border-radius:16px;overflow:hidden}
+.tp-toolbar{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;padding:1rem 1.1rem;border-bottom:1px solid var(--surface-border);background:rgba(2,6,23,.28)}
+.tp-search{position:relative;flex:1 1 260px;min-width:200px}
+.tp-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted)}
+.tp-search input{width:100%;padding:.7rem .85rem .7rem 2.4rem;border-radius:10px;background:rgba(15,23,42,.75);border:1px solid var(--surface-border);color:#fff;font:inherit;font-size:.9rem;outline:none}
+.tp-search input:focus{border-color:rgba(168,85,247,.55)}
+.tp-count{margin-left:auto;font-size:.78rem;color:var(--text-muted)}
+.tp-table-wrap{overflow-x:auto}
+.tp-table{width:100%;border-collapse:collapse;min-width:980px}
+.tp-table th,.tp-table td{padding:.9rem .95rem;text-align:left;border-bottom:1px solid var(--surface-border);vertical-align:middle;font-size:.86rem}
+.tp-table thead th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);background:rgba(255,255,255,.03)}
+.tp-table tbody tr:hover td{background:rgba(168,85,247,.06)}
+.tp-sub{margin-top:.18rem;font-size:.78rem;color:var(--text-muted)}
+.tp-cost{color:#4ade80;font-weight:700}
+.tp-pill{display:inline-flex;padding:.22rem .65rem;border-radius:999px;font-size:.74rem;font-weight:700}
+.tp-pill.is-live{color:#4ade80;background:rgba(34,197,94,.14)}
+.tp-actions{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tp-btn{display:inline-flex;align-items:center;gap:.3rem;height:32px;padding:0 .7rem;border-radius:8px;font:inherit;font-size:.75rem;font-weight:600;text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid var(--surface-border);background:rgba(255,255,255,.04);color:#e2e8f0}
+.tp-btn i{width:13px;height:13px}
+.tp-btn-primary{background:#a855f7;border-color:#a855f7;color:#fff}
+.tp-btn-warn{background:rgba(234,179,8,.08);border-color:rgba(234,179,8,.35);color:#fde047}
+.tp-assign-modal { max-width: 520px; padding: 1.75rem; }
+.tp-assign-modal h2 { margin: 0 0 0.35rem; font-family: 'Outfit', sans-serif; }
+.tp-assign-modal > p { margin: 0 0 1.1rem; font-size: 0.9rem; }
+.tp-assign-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 1.15rem;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--surface-border);
+    background: rgba(255,255,255,0.03);
+}
+.tp-assign-summary span {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+}
+.tp-assign-summary strong { font-size: 0.9rem; color: var(--text-main); word-break: break-word; }
+.tp-assign-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+.tp-assign-select {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--text-main);
+    font: inherit;
+    margin-bottom: 1.1rem;
+}
+.tp-assign-search {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+.tp-assign-search i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+.tp-assign-search input {
+    width: 100%;
+    padding: 0.75rem 0.85rem 0.75rem 2.4rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--text-main);
+    font: inherit;
+    outline: none;
+}
+.tp-assign-search input:focus {
+    border-color: rgba(168,85,247,0.55);
+}
+.tp-assign-selected {
+    margin-bottom: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    border: 1px dashed var(--surface-border);
+    background: rgba(168,85,247,0.08);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.tp-assign-selected.has-pick {
+    border-style: solid;
+    border-color: rgba(34,197,94,0.35);
+    background: rgba(34,197,94,0.08);
+    color: #4ade80;
+}
+.tp-contractor-list {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 0.5rem;
+    padding-right: 0.15rem;
+}
+.tp-assign-picker {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: start;
+    margin-bottom: 0.85rem;
+}
+.tp-assign-picker-left { min-width: 0; }
+.tp-contractor-hint{
+    margin: 0.35rem 0 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+.tp-contractor-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    color: var(--text-main);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+.tp-contractor-item strong { font-size: 0.9rem; }
+.tp-contractor-item span { font-size: 0.8rem; color: var(--text-muted); }
+.tp-contractor-item small { font-size: 0.75rem; color: var(--text-muted); }
+.tp-contractor-item:hover {
+    border-color: rgba(168,85,247,0.45);
+    background: rgba(168,85,247,0.08);
+}
+.tp-contractor-item.is-picked {
+    border-color: #a855f7;
+    background: rgba(168,85,247,0.14);
+}
+.tp-contractor-empty {
+    margin: 0;
+    padding: 0.85rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+.tp-contractor-count {
+    margin: 0 0 1rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.tp-assign-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.55rem;
+}
+.modal.is-open { display: flex; }
+</style>
+
+<script src="/js/app.js"></script>
+<script>
+if (window.lucide) lucide.createIcons();
+(function () {
+    var search = document.getElementById('liveSearch');
+    var table = document.getElementById('liveTable');
+    var countEl = document.getElementById('liveCount');
+    if (!table) return;
+    function apply() {
+        var q = (search && search.value ? search.value : '').trim().toLowerCase();
+        var shown = 0;
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            var match = !q || (row.getAttribute('data-search') || '').indexOf(q) !== -1;
+            row.style.display = match ? '' : 'none';
+            if (match) shown += 1;
+        });
+        if (countEl) countEl.textContent = shown + ' record' + (shown === 1 ? '' : 's');
+    }
+    if (search) search.addEventListener('input', apply);
+})();
+
+(function () {
+    var modal = document.getElementById('assignModal');
+    var form = document.getElementById('assignForm');
+    if (!modal || !form) return;
+
+    var contractorSearch = document.getElementById('contractorSearch');
+    var contractorId = document.getElementById('contractorId');
+    var contractorCount = document.getElementById('contractorCount');
+    var items = Array.prototype.slice.call(document.querySelectorAll('.tp-contractor-item'));
+
+    function filterContractors() {
+        var q = (contractorSearch && contractorSearch.value ? contractorSearch.value : '').trim().toLowerCase();
+        var shown = 0;
+        items.forEach(function (item) {
+            var match = !q || (item.getAttribute('data-search') || '').indexOf(q) !== -1;
+            item.style.display = match ? '' : 'none';
+            if (match) shown += 1;
+        });
+        if (contractorCount) {
+            contractorCount.textContent = shown + ' contractor' + (shown === 1 ? '' : 's') + ' shown';
+        }
+    }
+
+    function selectContractor(item) {
+        items.forEach(function (el) { el.classList.remove('is-picked'); });
+        item.classList.add('is-picked');
+        contractorId.value = item.getAttribute('data-id') || '';
+    }
+
+    function resetAssignPicker() {
+        contractorId.value = '';
+        if (contractorSearch) contractorSearch.value = '';
+        items.forEach(function (el) { el.classList.remove('is-picked'); });
+        filterContractors();
+    }
+
+    function openAssign(btn) {
+        var id = btn.getAttribute('data-tender-id');
+        var owner = btn.getAttribute('data-owner') || '—';
+        var code = btn.getAttribute('data-code') || '—';
+        var cost = btn.getAttribute('data-cost') || '—';
+        var sub = document.getElementById('assignModalSub');
+        if (sub) {
+            sub.textContent = 'Tender #' + id + ' · ' + owner + ' · ' + code + ' · ' + cost;
+        }
+        form.action = '/tender-admin/assign/' + id;
+        resetAssignPicker();
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        if (contractorSearch) contractorSearch.focus();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAssign() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    items.forEach(function (item) {
+        item.addEventListener('click', function () { selectContractor(item); });
+    });
+    if (contractorSearch) contractorSearch.addEventListener('input', filterContractors);
+
+    form.addEventListener('submit', function (e) {
+        if (!contractorId.value) {
+            e.preventDefault();
+            alert('Please search and select a contractor.');
+        }
+    });
+
+    document.querySelectorAll('.js-assign-open').forEach(function (btn) {
+        btn.addEventListener('click', function () { openAssign(btn); });
+    });
+    document.querySelectorAll('.js-assign-close').forEach(function (btn) {
+        btn.addEventListener('click', closeAssign);
+    });
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeAssign();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeAssign();
+    });
+
+    filterContractors();
+})();
+</script>

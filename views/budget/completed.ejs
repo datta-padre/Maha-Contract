@@ -1,0 +1,362 @@
+<%- include('../partials/header') %>
+<%
+    var estimated = (typeof estimatedTenders !== 'undefined' && Array.isArray(estimatedTenders)) ? estimatedTenders : [];
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function escAttr(val) {
+        return String(val || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+    function budgetBadge(status) {
+        var s = String(status || 'pending').toLowerCase();
+        if (s === 'approved') return { cls: 'is-ok', label: 'Approved' };
+        if (s === 'estimated') return { cls: 'is-info', label: 'Estimated' };
+        return { cls: 'is-warn', label: 'Pending' };
+    }
+    var countEstimated = estimated.filter(function (t) {
+        return String(t.budget_status || '').toLowerCase() === 'estimated';
+    }).length;
+    var countApproved = estimated.filter(function (t) {
+        return String(t.budget_status || '').toLowerCase() === 'approved';
+    }).length;
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout bdg-desk">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header bdg-header">
+            <div>
+                <p class="bdg-kicker">Budget Admin</p>
+                <h2>Completed Budget</h2>
+                <p class="bdg-subtitle">Review finalized estimates, open reports, and reopen tenders when needed.</p>
+            </div>
+            <div class="bdg-queue-count is-ok">
+                <i data-lucide="badge-check"></i>
+                <div>
+                    <span>Completed</span>
+                    <strong><%= estimated.length %></strong>
+                </div>
+            </div>
+        </header>
+
+        <% if (typeof notice !== 'undefined' && (notice === 'saved' || notice === 'approved')) { %>
+        <div class="alert-banner" style="margin-bottom:1rem;border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);">
+            <i data-lucide="check-circle"></i>
+            <div>
+                <strong><%= notice === 'approved' ? 'Budget approved' : 'Budget saved' %></strong>
+                <p style="margin:0;color:var(--text-muted);"><%= notice === 'approved' ? 'Status set to approved.' : 'Estimate added to the completed queue.' %></p>
+            </div>
+        </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="bdg-stat-row bdg-stat-row-3">
+            <div class="bdg-stat-card is-info">
+                <i data-lucide="database"></i>
+                <div>
+                    <strong><%= estimated.length %></strong>
+                    <p>Total completed</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-info">
+                <i data-lucide="calculator"></i>
+                <div>
+                    <strong><%= countEstimated %></strong>
+                    <p>Estimated</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-ok">
+                <i data-lucide="badge-check"></i>
+                <div>
+                    <strong><%= countApproved %></strong>
+                    <p>Approved</p>
+                </div>
+            </div>
+        </div>
+
+        <% if (!estimated.length) { %>
+        <section class="bdg-empty-panel">
+            <div class="bdg-empty-icon"><i data-lucide="database"></i></div>
+            <p class="bdg-kicker">Completed desk</p>
+            <h3>No completed estimations yet</h3>
+            <p>Finished budget reports will appear here after estimations are submitted from the pending queue.</p>
+            <div class="bdg-empty-actions">
+                <a href="/budget-admin/pending" class="btn-primary">Open pending queue</a>
+                <a href="/budget-admin" class="btn-secondary">Back to overview</a>
+            </div>
+        </section>
+        <% } else { %>
+        <div class="bdg-panel bdg-completed-panel">
+            <div class="bdg-toolbar">
+                <div class="bdg-search">
+                    <i data-lucide="search"></i>
+                    <input id="completedSearch" type="search" placeholder="Search tender or owner..." aria-label="Search completed budgets">
+                </div>
+                <div class="bdg-toolbar-meta">
+                    <select id="completedStatusFilter" class="bdg-select" aria-label="Filter by status">
+                        <option value="all">All status</option>
+                        <option value="estimated">Estimated</option>
+                        <option value="approved">Approved</option>
+                    </select>
+                    <span class="bdg-count" id="completedCount"><%= estimated.length %> records</span>
+                </div>
+            </div>
+
+            <div class="bdg-mobile-list" id="completedMobileList">
+                <% estimated.forEach(function (t) {
+                    var badge = budgetBadge(t.budget_status);
+                    var targetDate = t.estimated_completion_date
+                        ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN')
+                        : '—';
+                    var submitted = t.created_at ? new Date(t.created_at).toLocaleString('en-IN') : '—';
+                    var searchKey = [t.tender_id, t.owner_name, t.owner_email, t.constructionCode, t.budget_status, badge.label, t.estimated_cost].join(' ').toLowerCase();
+                %>
+                <article class="bdg-mobile-card bdg-filter-item"
+                    data-search="<%= searchKey %>"
+                    data-status="<%= String(t.budget_status || 'estimated').toLowerCase() %>">
+                    <div class="bdg-mobile-head">
+                        <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                        <span class="bdg-pill <%= badge.cls %>"><%= badge.label %></span>
+                    </div>
+                    <p class="bdg-mobile-sub"><%= safe(t.owner_email) %> · <%= safe(t.constructionCode) %></p>
+                    <div class="bdg-mobile-meta">
+                        <span>Owner <%= money(t.budget) %></span>
+                        <span class="bdg-cost">Est. <%= money(t.estimated_cost) %></span>
+                        <span>Target <%= targetDate %></span>
+                    </div>
+                    <div class="bdg-card-actions">
+                        <button type="button" class="bdg-btn bdg-btn-ghost"
+                            onclick="window.openTenderA4 && window.openTenderA4(this)"
+                            data-tender-id="<%= escAttr(t.tender_id) %>"
+                            data-owner-name="<%= escAttr(safe(t.owner_name)) %>"
+                            data-owner-email="<%= escAttr(safe(t.owner_email)) %>"
+                            data-owner-mobile="<%= escAttr(safe(t.owner_mobile)) %>"
+                            data-construction-code="<%= escAttr(safe(t.constructionCode)) %>"
+                            data-plot-area="<%= escAttr(safe(t.plotArea)) %>"
+                            data-soil-type="<%= escAttr(safe(t.soilType)) %>"
+                            data-location="<%= escAttr(safe(t.plotLocation)) %>"
+                            data-bhk="<%= escAttr(safe(t.bhk)) %>"
+                            data-floors="<%= escAttr(safe(t.floors)) %>"
+                            data-budget="<%= escAttr(money(t.budget)) %>"
+                            data-materials-provided="<%= escAttr(safe(t.materialsProvided)) %>"
+                            data-finalized-plan="<%= escAttr(safe(t.finalizedPlan)) %>"
+                            data-ancillary-requirements="<%= escAttr(safe(t.ancillary_requirements)) %>"
+                            data-external-works="<%= escAttr(safe(t.externalWorks)) %>"
+                            data-boundary-wall-type="<%= escAttr(safe(t.boundaryWallType)) %>"
+                            data-construction-time="<%= escAttr(safe(t.constructionTime)) %>"
+                            data-special-instructions="<%= escAttr(safe(t.specialInstructions)) %>"
+                            data-architectural-plan="<%= escAttr(safe(t.architectural_plan)) %>"
+                            data-plot-documents="<%= escAttr(safe(t.Plot_documents)) %>"
+                            data-house-owner-digital-signature="<%= escAttr(safe(t.house_owner_digital_signature)) %>"
+                            data-payment-status="<%= escAttr(safe(t.payment_status)) %>"
+                            data-payment-amount="<%= escAttr(money(t.payment_amount)) %>"
+                            data-budget-status="<%= escAttr(safe(t.budget_status)) %>"
+                            data-estimated-cost="<%= escAttr(money(t.estimated_cost)) %>"
+                            data-created-at="<%= escAttr(submitted) %>">
+                            <i data-lucide="eye"></i> View
+                        </button>
+                        <% if (t.budget_report && String(t.budget_report).trim()) { %>
+                        <a href="/budget-admin/view-report?file=<%= encodeURIComponent(t.budget_report) %>" target="_blank" rel="noopener" class="bdg-btn bdg-btn-report">
+                            <i data-lucide="file-text"></i> Report
+                        </a>
+                        <% } %>
+                        <a href="/budget-admin/estimate/<%= t.tender_id %>" class="bdg-btn bdg-btn-edit">
+                            <i data-lucide="pencil"></i> Edit
+                        </a>
+                        <form method="post" action="/budget-admin/reopen/<%= t.tender_id %>" class="bdg-inline-form">
+                            <button type="submit" class="bdg-btn bdg-btn-warn" onclick="return confirm('Reopen this tender for re-estimation?');">
+                                <i data-lucide="rotate-ccw"></i> Reopen
+                            </button>
+                        </form>
+                    </div>
+                </article>
+                <% }) %>
+            </div>
+
+            <div class="bdg-table-wrap bdg-table-desktop">
+                <table id="completedTable" class="bdg-table">
+                    <thead>
+                        <tr>
+                            <th>Sr</th>
+                            <th>Tender</th>
+                            <th>Owner</th>
+                            <th>Owner budget</th>
+                            <th>Estimated cost</th>
+                            <th>Status</th>
+                            <th>Target date</th>
+                            <th>Documents</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% estimated.forEach(function (t, i) {
+                            var badge = budgetBadge(t.budget_status);
+                            var targetDate = t.estimated_completion_date
+                                ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN')
+                                : '—';
+                            var submitted = t.created_at ? new Date(t.created_at).toLocaleString('en-IN') : '—';
+                        %>
+                        <tr class="bdg-filter-item"
+                            data-search="<%= [t.tender_id, t.owner_name, t.owner_email, t.constructionCode, t.budget_status, badge.label, t.estimated_cost].join(' ').toLowerCase() %>"
+                            data-status="<%= String(t.budget_status || 'estimated').toLowerCase() %>">
+                            <td><%= i + 1 %></td>
+                            <td>
+                                <strong>#<%= t.tender_id %></strong>
+                                <div class="bdg-sub"><%= safe(t.constructionCode) %></div>
+                            </td>
+                            <td>
+                                <strong><%= safe(t.owner_name) %></strong>
+                                <div class="bdg-sub"><%= safe(t.owner_email) %></div>
+                            </td>
+                            <td><%= money(t.budget) %></td>
+                            <td><span class="bdg-cost"><%= money(t.estimated_cost) %></span></td>
+                            <td><span class="bdg-pill <%= badge.cls %>"><%= badge.label %></span></td>
+                            <td><%= targetDate %></td>
+                            <td>
+                                <div class="bdg-docs">
+                                    <button type="button" class="bdg-btn bdg-btn-ghost"
+                                        onclick="window.openTenderA4 && window.openTenderA4(this)"
+                                        data-tender-id="<%= escAttr(t.tender_id) %>"
+                                        data-owner-name="<%= escAttr(safe(t.owner_name)) %>"
+                                        data-owner-email="<%= escAttr(safe(t.owner_email)) %>"
+                                        data-owner-mobile="<%= escAttr(safe(t.owner_mobile)) %>"
+                                        data-construction-code="<%= escAttr(safe(t.constructionCode)) %>"
+                                        data-plot-area="<%= escAttr(safe(t.plotArea)) %>"
+                                        data-soil-type="<%= escAttr(safe(t.soilType)) %>"
+                                        data-location="<%= escAttr(safe(t.plotLocation)) %>"
+                                        data-bhk="<%= escAttr(safe(t.bhk)) %>"
+                                        data-floors="<%= escAttr(safe(t.floors)) %>"
+                                        data-budget="<%= escAttr(money(t.budget)) %>"
+                                        data-materials-provided="<%= escAttr(safe(t.materialsProvided)) %>"
+                                        data-finalized-plan="<%= escAttr(safe(t.finalizedPlan)) %>"
+                                        data-ancillary-requirements="<%= escAttr(safe(t.ancillary_requirements)) %>"
+                                        data-external-works="<%= escAttr(safe(t.externalWorks)) %>"
+                                        data-boundary-wall-type="<%= escAttr(safe(t.boundaryWallType)) %>"
+                                        data-construction-time="<%= escAttr(safe(t.constructionTime)) %>"
+                                        data-special-instructions="<%= escAttr(safe(t.specialInstructions)) %>"
+                                        data-architectural-plan="<%= escAttr(safe(t.architectural_plan)) %>"
+                                        data-plot-documents="<%= escAttr(safe(t.Plot_documents)) %>"
+                                        data-house-owner-digital-signature="<%= escAttr(safe(t.house_owner_digital_signature)) %>"
+                                        data-payment-status="<%= escAttr(safe(t.payment_status)) %>"
+                                        data-payment-amount="<%= escAttr(money(t.payment_amount)) %>"
+                                        data-budget-status="<%= escAttr(safe(t.budget_status)) %>"
+                                        data-estimated-cost="<%= escAttr(money(t.estimated_cost)) %>"
+                                        data-created-at="<%= escAttr(submitted) %>">
+                                        <i data-lucide="eye"></i> View Tender
+                                    </button>
+                                    <% if (t.budget_report && String(t.budget_report).trim()) { %>
+                                    <a href="/budget-admin/view-report?file=<%= encodeURIComponent(t.budget_report) %>" target="_blank" rel="noopener" class="bdg-btn bdg-btn-report">
+                                        <i data-lucide="file-text"></i> Budget report
+                                    </a>
+                                    <% } %>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="bdg-docs">
+                                    <a href="/budget-admin/estimate/<%= t.tender_id %>" class="bdg-btn bdg-btn-edit">
+                                        <i data-lucide="pencil"></i> Edit
+                                    </a>
+                                    <form method="post" action="/budget-admin/reopen/<%= t.tender_id %>" class="bdg-inline-form">
+                                        <button type="submit" class="bdg-btn bdg-btn-warn" onclick="return confirm('Reopen this tender for re-estimation?');">
+                                            <i data-lucide="rotate-ccw"></i> Reopen
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <% } %>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    if (window.lucide) lucide.createIcons();
+
+    (function () {
+        var search = document.getElementById('completedSearch');
+        var filter = document.getElementById('completedStatusFilter');
+        var countEl = document.getElementById('completedCount');
+        var items = document.querySelectorAll('.bdg-filter-item');
+        if (!items.length) return;
+
+        function applyFilters() {
+            var q = (search && search.value ? search.value : '').trim().toLowerCase();
+            var s = filter ? filter.value : 'all';
+            var visible = 0;
+            items.forEach(function (row) {
+                var hay = row.getAttribute('data-search') || '';
+                var status = row.getAttribute('data-status') || '';
+                var show = (!q || hay.indexOf(q) !== -1) && (s === 'all' || status === s);
+                row.style.display = show ? '' : 'none';
+                if (show && row.classList.contains('bdg-mobile-card')) visible += 1;
+            });
+            if (countEl) countEl.textContent = visible + ' record' + (visible === 1 ? '' : 's');
+        }
+
+        if (search) search.addEventListener('input', applyFilters);
+        if (filter) filter.addEventListener('change', applyFilters);
+        applyFilters();
+    })();
+
+    window.openTenderA4 = function (btn) {
+        if (!btn || !btn.dataset) return;
+        var d = btn.dataset;
+        var w = window.open('about:blank', 'TenderA4_' + (d.tenderId || ''), 'width=980,height=720');
+        if (!w) {
+            alert('Pop-up blocked. Please allow pop-ups to view the A4 tender page.');
+            return;
+        }
+
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Tender A4</title>';
+        html += '<style>@page{size:A4;margin:18mm;}body{font-family:Arial,sans-serif;color:#111;}';
+        html += 'table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}';
+        html += 'th{background:#f3f4f6;font-size:12px;}.sec{margin-top:16px;}.title{font-size:18px;font-weight:700;margin:0;}';
+        html += '.sub{color:#555;font-size:13px;margin:4px 0 0;}</style></head><body>';
+        html += '<p class="title">Maha Contract — Tender #' + (d.tenderId || '') + '</p>';
+        html += '<p class="sub">Completed budget brief · ' + new Date().toLocaleString('en-IN') + '</p>';
+        html += '<div class="sec"><table><tbody>';
+        html += '<tr><th>Owner</th><td>' + (d.ownerName || '—') + '</td></tr>';
+        html += '<tr><th>Email</th><td>' + (d.ownerEmail || '—') + '</td></tr>';
+        html += '<tr><th>Mobile</th><td>' + (d.ownerMobile || '—') + '</td></tr>';
+        html += '<tr><th>Construction code</th><td>' + (d.constructionCode || '—') + '</td></tr>';
+        html += '<tr><th>Plot area</th><td>' + (d.plotArea || '—') + '</td></tr>';
+        html += '<tr><th>Location</th><td>' + (d.location || '—') + '</td></tr>';
+        html += '<tr><th>BHK / Floors</th><td>' + (d.bhk || '—') + ' · ' + (d.floors || '—') + '</td></tr>';
+        html += '<tr><th>Owner budget</th><td>' + (d.budget || '—') + '</td></tr>';
+        html += '<tr><th>Estimated cost</th><td>' + (d.estimatedCost || '—') + '</td></tr>';
+        html += '<tr><th>Budget status</th><td>' + (d.budgetStatus || '—') + '</td></tr>';
+        html += '<tr><th>Special instructions</th><td>' + (d.specialInstructions || '—') + '</td></tr>';
+        html += '</tbody></table></div>';
+        html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;gap:10px;">';
+        html += '<button onclick="window.print()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#111;color:#fff;cursor:pointer;">Print</button>';
+        html += '<button onclick="window.close()" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#111;cursor:pointer;">Close</button>';
+        html += '</div></body></html>';
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+    };
+</script>

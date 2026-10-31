@@ -1,0 +1,132 @@
+<%- include('../partials/header') %>
+<%
+    var stats = (typeof stats !== 'undefined' && stats) ? stats : { pending: 0, estimated: 0, approved: 0, paid: 0, feesCollected: 0 };
+    var pending = (typeof pendingTenders !== 'undefined' && Array.isArray(pendingTenders)) ? pendingTenders : [];
+    var estimated = (typeof estimatedTenders !== 'undefined' && Array.isArray(estimatedTenders)) ? estimatedTenders : [];
+
+    function safe(val) {
+        return (val === undefined || val === null || val === '') ? '—' : val;
+    }
+    function money(amount) {
+        if (amount === undefined || amount === null || amount === '') return '—';
+        var n = Number(amount);
+        if (isNaN(n)) return '₹' + amount;
+        return '₹' + n.toLocaleString('en-IN');
+    }
+%>
+<div class="background-animation"></div>
+<div class="dashboard-layout bdg-desk">
+    <%- include('./_sidebar') %>
+
+    <main class="dashboard-content">
+        <header class="dashboard-header bdg-header">
+            <div>
+                <p class="bdg-kicker">Budget Admin</p>
+                <h2>Budget Estimator Desk</h2>
+                <p class="bdg-subtitle">Estimate base costs, assign completion dates, and forward reports for tender publishing.</p>
+            </div>
+            <a href="/budget-admin/pending" class="btn-primary bdg-header-cta">
+                <i data-lucide="clock"></i> Open pending queue
+            </a>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert-banner alert-error" style="margin-bottom: 1.25rem;">
+            <i data-lucide="alert-circle"></i>
+            <div><strong>Error</strong><p><%= error %></p></div>
+        </div>
+        <% } %>
+
+        <div class="bdg-stat-row">
+            <div class="bdg-stat-card is-info">
+                <i data-lucide="clock"></i>
+                <div>
+                    <strong><%= stats.pending || 0 %></strong>
+                    <p>Pending Estimations</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-ok">
+                <i data-lucide="check-circle"></i>
+                <div>
+                    <strong><%= stats.estimated || 0 %></strong>
+                    <p>Estimated Budgets</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-ok-strong">
+                <i data-lucide="badge-check"></i>
+                <div>
+                    <strong><%= stats.approved || 0 %></strong>
+                    <p>Approved Budgets</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-warn">
+                <i data-lucide="wallet"></i>
+                <div>
+                    <strong><%= stats.paid || 0 %></strong>
+                    <p>Paid Tenders</p>
+                </div>
+            </div>
+            <div class="bdg-stat-card is-purple">
+                <i data-lucide="banknote"></i>
+                <div>
+                    <strong><%= money(stats.feesCollected) %></strong>
+                    <p>Fees Collected</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bdg-panels">
+            <section class="bdg-panel">
+                <div class="bdg-panel-head">
+                    <h3 class="is-pending">Pending queue</h3>
+                    <a href="/budget-admin/pending">View all</a>
+                </div>
+                <% if (!pending.length) { %>
+                <div class="bdg-empty">
+                    <i data-lucide="inbox"></i>
+                    <p>No tenders waiting for budget estimation.</p>
+                </div>
+                <% } else { %>
+                <div class="bdg-list">
+                    <% pending.forEach(function (t) { %>
+                    <a class="bdg-list-item is-link" href="/budget-admin/estimate/<%= t.tender_id %>">
+                        <div class="bdg-list-main">
+                            <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                            <span><%= safe(t.plotArea) %> · Owner budget <%= money(t.budget) %></span>
+                        </div>
+                        <i data-lucide="chevron-right"></i>
+                    </a>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+
+            <section class="bdg-panel">
+                <div class="bdg-panel-head">
+                    <h3 class="is-done">Recently estimated</h3>
+                    <a href="/budget-admin/completed">View all</a>
+                </div>
+                <% if (!estimated.length) { %>
+                <div class="bdg-empty">
+                    <i data-lucide="file-check-2"></i>
+                    <p>Completed estimates will appear here.</p>
+                </div>
+                <% } else { %>
+                <div class="bdg-list">
+                    <% estimated.forEach(function (t) { %>
+                    <div class="bdg-list-item">
+                        <div class="bdg-list-main">
+                            <strong>#<%= t.tender_id %> · <%= safe(t.owner_name) %></strong>
+                            <span>Est. <%= money(t.estimated_cost) %> · Target <%= t.estimated_completion_date ? new Date(t.estimated_completion_date).toLocaleDateString('en-IN') : '—' %></span>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>

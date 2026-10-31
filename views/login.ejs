@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" class="light-theme">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | Maha Contract</title>
+  <meta name="description" content="Sign in to your Maha Contract account">
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="login-page-body">
+  <%
+    var loginEndpoint = (typeof loginEndpoint !== 'undefined' && loginEndpoint) ? loginEndpoint : '/login';
+  %>
+  <div id="google_translate_element" class="lg-google-translate-host"></div>
+  <%- include('partials/login') %>
+
+  <script>
+    (function () {
+      var loginEndpoint = '<%= loginEndpoint %>';
+      var html = document.documentElement;
+      var form = document.getElementById('loginForm');
+      var alertBox = document.getElementById('loginAlert');
+      var alertText = document.getElementById('loginAlertText');
+      var toggleBtn = document.getElementById('togglePass');
+      var passInput = document.getElementById('loginPass');
+      var forgot = document.getElementById('forgotPass');
+      var themeBtn = document.getElementById('loginThemeBtn');
+
+      function applyTheme(theme) {
+        var isLight = theme === 'light';
+        html.classList.toggle('light-theme', isLight);
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        if (themeBtn) {
+          themeBtn.innerHTML = isLight
+            ? '<i data-lucide="moon"></i>'
+            : '<i data-lucide="sun"></i>';
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      function showError(message) {
+        if (!alertBox) return;
+        alertBox.hidden = false;
+        if (alertText) alertText.textContent = message || 'Please check your credentials.';
+      }
+
+      if (toggleBtn && passInput) {
+        toggleBtn.addEventListener('click', function () {
+          var show = passInput.type === 'password';
+          passInput.type = show ? 'text' : 'password';
+          toggleBtn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+          toggleBtn.innerHTML = show ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+          if (window.lucide) lucide.createIcons();
+        });
+      }
+
+      if (forgot) {
+        forgot.addEventListener('click', function (e) {
+          e.preventDefault();
+          alert('Password reset is not available yet. Contact support if you need help.');
+        });
+      }
+
+      if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+          var next = html.classList.contains('light-theme') ? 'dark' : 'light';
+          applyTheme(next);
+        });
+      }
+
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var email = document.getElementById('loginEmail').value.trim();
+          var password = document.getElementById('loginPass').value;
+          var submitBtn = document.getElementById('loginSubmit');
+
+          if (!email || !password) {
+            showError('Email and password are required.');
+            return;
+          }
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+          }
+
+          fetch(loginEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.success) {
+                window.location.href = data.redirect || '/';
+                return;
+              }
+              showError(data.message || 'Login failed. Please check your credentials.');
+            })
+            .catch(function () {
+              showError('An error occurred. Please try again.');
+            })
+            .finally(function () {
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login Now';
+              }
+            });
+        });
+      }
+
+      applyTheme(localStorage.getItem('theme') || 'light');
+      if (window.lucide) lucide.createIcons();
+    })();
+  </script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

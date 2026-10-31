@@ -1,6 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const exe = require('../config/connection');
+const {
+    ROLES,
+    STAFF_ROLES,
+    STAFF_ROLE_DB,
+    hashPassword,
+    passwordsMatch,
+    normalizeAuthRole,
+    signToken,
+    setAuthCookie,
+    dashboardForRole,
+    verifyToken,
+    requireRole
+} = require('../middleware/auth');
 
 function countBy(rows, key, value) {
     if (!Array.isArray(rows)) return 0;
@@ -13,6 +26,157 @@ function countBy(rows, key, value) {
 function firstCount(rows) {
     return Array.isArray(rows) && rows[0] ? Number(rows[0].c) || 0 : 0;
 }
+
+var STAFF_ROLE_LABELS = {
+    VerifyAdmin: 'Verify Admin',
+    BudgetAdmin: 'Budget Admin',
+    MaterialsAdmin: 'Materials Admin',
+    TenderAdmin: 'Tender Admin'
+};
+
+function normalizeStaffRole(role) {
+    var mapped = normalizeAuthRole(role);
+    return STAFF_ROLE_DB[mapped] || role;
+}
+
+function formatStaffRole(role) {
+    return STAFF_ROLE_LABELS[role] || role;
+}
+
+function generateStaffPassword() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function mapStaffRows(rows) {
+    if (!Array.isArray(rows)) return [];
+    return rows.map(function (row) {
+        return {
+            id: row.staff_id,
+            name: row.staff_name,
+            email: row.staff_email,
+            mobile: row.staff_mobile,
+            role: formatStaffRole(row.staff_role),
+            roleKey: row.staff_role,
+            status: row.staff_status || 'active',
+            created: row.staff_created_at
+        };
+    });
+}
+
+async function getStaffById(staffId) {
+    var rows = await exe(
+        `SELECT staff_id, staff_name, staff_email, staff_mobile, staff_role, staff_status, staff_password, staff_created_at
+         FROM staff WHERE staff_id = ? LIMIT 1`,
+        [staffId]
+    );
+    if (!Array.isArray(rows) || !rows.length) return null;
+    var member = mapStaffRows(rows)[0];
+    member.password = '';
+    member.hasPassword = !!(rows[0].staff_password);
+    return member;
+}
+
+async function getStaffStats() {
+    var rows = await exe(
+        `SELECT staff_status AS status, COUNT(*) AS c FROM staff GROUP BY staff_status`
+    );
+    if (!Array.isArray(rows)) rows = [];
+    var total = rows.reduce(function (sum, r) { return sum + (Number(r.c) || 0); }, 0);
+    var activeCount = 0;
+    for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i].status).toLowerCase() === 'active') {
+            activeCount = Number(rows[i].c) || 0;
+        }
+    }
+    return { total: total, activeCount: activeCount };
+}
+
+async function ensureStaffRoleEnum() {
+    try {
+        await exe(
+            `ALTER TABLE staff
+             MODIFY COLUMN staff_role
+             ENUM('VerifyAdmin','BudgetAdmin','MaterialsAdmin','TenderAdmin') NOT NULL`
+        );
+    } catch (e) {
+        console.error('staff_role ENUM ensure failed:', e.message);
+    }
+}
+
+router.get('/login', (req, res) => {
+    res.render('login', {
+        error: req.query.error || '',
+        notice: req.query.notice || '',
+        loginEndpoint: '/master-admin/login'
+    });
+});
+
+router.post('/login', async (req, res) => {
+    try {
+        var email = String((req.body && req.body.email) || '').trim();
+        var password = String((req.body && req.body.password) || '');
+        if (!email || !password) {
+            return res.json({ success: false, message: 'Email and password are required.' });
+        }
+
+        var adminRows = await exe(
+            `SELECT * FROM users
+             WHERE (email = ? OR mobile = ?) AND role = 'admin'
+             LIMIT 1`,
+            [email, email]
+        );
+        if (Array.isArray(adminRows) && adminRows[0] && passwordsMatch(password, adminRows[0].password_hash)) {
+            var admin = adminRows[0];
+            var adminToken = signToken({
+                user_id: admin.user_id,
+                email: admin.email,
+                role: ROLES.ADMIN,
+                kind: 'user'
+            });
+            setAuthCookie(res, adminToken);
+            return res.json({
+                success: true,
+                role: ROLES.ADMIN,
+                redirect: dashboardForRole(ROLES.ADMIN)
+            });
+        }
+
+        await ensureStaffRoleEnum();
+        var staffRows = await exe(
+            `SELECT * FROM staff
+             WHERE (staff_email = ? OR staff_mobile = ?)
+             LIMIT 1`,
+            [email, email]
+        );
+        if (!Array.isArray(staffRows) || !staffRows[0] || !passwordsMatch(password, staffRows[0].staff_password)) {
+            return res.json({ success: false, message: 'Invalid admin credentials.' });
+        }
+
+        var staff = staffRows[0];
+        if (String(staff.staff_status || '').toLowerCase() !== 'active') {
+            return res.json({ success: false, message: 'This staff account is inactive.' });
+        }
+
+        var staffRole = normalizeAuthRole(staff.staff_role);
+        var staffToken = signToken({
+            staff_id: staff.staff_id,
+            email: staff.staff_email,
+            role: staffRole,
+            kind: 'staff'
+        });
+        setAuthCookie(res, staffToken);
+        return res.json({
+            success: true,
+            role: staffRole,
+            redirect: dashboardForRole(staffRole)
+        });
+    } catch (err) {
+        console.error(err);
+        return res.json({ success: false, message: 'Admin login failed.' });
+    }
+});
+
+router.use(verifyToken, requireRole(ROLES.ADMIN));
 
 router.get('/', async (req, res) => {
     try {
@@ -60,6 +224,234 @@ router.get('/', async (req, res) => {
             users: [],
             error: 'Could not load master admin panel.'
         });
+    }
+});
+
+router.get('/staff-management', (req, res) => {
+    res.redirect('/master-admin/staff-management/hire-employee');
+});
+
+router.get('/staff-management/hire-employee', async (req, res) => {
+    try {
+        var stats = await getStaffStats();
+        res.render('master-admin/hire-employee', {
+            activePage: 'hire-employee',
+            staffStats: stats,
+            staffFromDb: true
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('master-admin/hire-employee', {
+            activePage: 'hire-employee',
+            staffStats: { total: 0, activeCount: 0 },
+            staffFromDb: true,
+            error: 'Could not load staff stats.'
+        });
+    }
+});
+
+router.post('/staff-management/hire-employee', async (req, res) => {
+    try {
+        var staffName = (req.body.staffName || '').trim();
+        var staffEmail = (req.body.staffEmail || '').trim();
+        var staffMobile = (req.body.staffMobile || '').trim();
+        var staffRole = normalizeStaffRole(req.body.staffRole);
+        var staffPassword = (req.body.staffPassword || '').trim() || generateStaffPassword();
+        var storedPassword = hashPassword(staffPassword);
+
+        if (!staffName || !staffEmail || !staffRole) {
+            return res.redirect('/master-admin/staff-management/hire-employee?error=missing');
+        }
+
+        await ensureStaffRoleEnum();
+        await exe(
+            `INSERT INTO staff (staff_name, staff_email, staff_mobile, staff_role, staff_password)
+             VALUES (?, ?, ?, ?, ?)`,
+            [staffName, staffEmail, staffMobile || null, staffRole, storedPassword]
+        );
+        res.redirect(
+            '/master-admin/staff-management/employee-list?notice=hired&name=' +
+            encodeURIComponent(staffName) +
+            '&code=' + encodeURIComponent(staffPassword)
+        );
+    } catch (err) {
+        console.error(err);
+        res.redirect('/master-admin/staff-management/hire-employee?error=save');
+    }
+});
+
+router.get('/staff-management/employee-list', async (req, res) => {
+    try {
+        var rows = await exe(
+            `SELECT staff_id, staff_name, staff_email, staff_mobile, staff_role, staff_status, staff_created_at
+             FROM staff ORDER BY staff_id DESC`
+        );
+        var stats = await getStaffStats();
+        res.render('master-admin/employee-list', {
+            activePage: 'employee-list',
+            staff: mapStaffRows(rows),
+            staffStats: stats,
+            staffFromDb: true,
+            notice: req.query.notice || '',
+            noticeName: req.query.name || '',
+            noticeCode: req.query.code || ''
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('master-admin/employee-list', {
+            activePage: 'employee-list',
+            staff: [],
+            staffStats: { total: 0, activeCount: 0 },
+            staffFromDb: true,
+            error: 'Could not load staff list.'
+        });
+    }
+});
+
+router.post('/staff-management/employee-list/reset', async (req, res) => {
+    try {
+        var staffId = Number(req.body.staffId);
+        if (!staffId) {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=error');
+        }
+
+        var rows = await exe(
+            `SELECT staff_id, staff_name, staff_status FROM staff WHERE staff_id = ? LIMIT 1`,
+            [staffId]
+        );
+        if (!Array.isArray(rows) || !rows.length) {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=notfound');
+        }
+
+        var member = rows[0];
+        if (String(member.staff_status).toLowerCase() !== 'active') {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=inactive');
+        }
+
+        var newPassword = generateStaffPassword();
+        await exe(
+            `UPDATE staff SET staff_password = ? WHERE staff_id = ?`,
+            [hashPassword(newPassword), staffId]
+        );
+
+        var name = encodeURIComponent(member.staff_name || 'Staff');
+        res.redirect(
+            '/master-admin/staff-management/employee-list?notice=reset&name=' + name + '&code=' + newPassword
+        );
+    } catch (err) {
+        console.error(err);
+        res.redirect('/master-admin/staff-management/employee-list?notice=error');
+    }
+});
+
+router.post('/staff-management/employee-list/fire', async (req, res) => {
+    try {
+        var staffId = Number(req.body.staffId);
+        if (!staffId) {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=error');
+        }
+
+        var rows = await exe(
+            `SELECT staff_id, staff_name, staff_status FROM staff WHERE staff_id = ? LIMIT 1`,
+            [staffId]
+        );
+        if (!Array.isArray(rows) || !rows.length) {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=notfound');
+        }
+
+        var member = rows[0];
+        if (String(member.staff_status).toLowerCase() === 'inactive') {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=already');
+        }
+
+        await exe(
+            `UPDATE staff SET staff_status = 'inactive' WHERE staff_id = ?`,
+            [staffId]
+        );
+
+        var name = encodeURIComponent(member.staff_name || 'Staff');
+        res.redirect('/master-admin/staff-management/employee-list?notice=fired&name=' + name);
+    } catch (err) {
+        console.error(err);
+        res.redirect('/master-admin/staff-management/employee-list?notice=error');
+    }
+});
+
+router.get('/staff-management/employee-list/edit/:id', async (req, res) => {
+    try {
+        var staffId = Number(req.params.id);
+        var member = await getStaffById(staffId);
+        if (!member) {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=notfound');
+        }
+
+        res.render('master-admin/edit-employee', {
+            activePage: 'employee-list',
+            member: member,
+            error: req.query.error || '',
+            notice: req.query.notice || ''
+        });
+    } catch (err) {
+        console.error(err);
+        res.redirect('/master-admin/staff-management/employee-list?notice=error');
+    }
+});
+
+router.post('/staff-management/employee-list/edit/:id', async (req, res) => {
+    try {
+        var staffId = Number(req.params.id);
+        var member = await getStaffById(staffId);
+        if (!member) {
+            return res.redirect('/master-admin/staff-management/employee-list?notice=notfound');
+        }
+
+        var staffName = (req.body.staffName || '').trim();
+        var staffEmail = (req.body.staffEmail || '').trim();
+        var staffMobile = (req.body.staffMobile || '').trim();
+        var staffRole = normalizeStaffRole(req.body.staffRole);
+        var staffStatus = String(req.body.staffStatus || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active';
+        var staffPassword = (req.body.staffPassword || '').trim();
+        var staffPasswordConfirm = (req.body.staffPasswordConfirm || '').trim();
+        var passwordChanged = false;
+
+        if (!staffName || !staffEmail || !staffRole) {
+            return res.redirect('/master-admin/staff-management/employee-list/edit/' + staffId + '?error=missing');
+        }
+
+        if (staffPassword || staffPasswordConfirm) {
+            if (staffPassword !== staffPasswordConfirm) {
+                return res.redirect('/master-admin/staff-management/employee-list/edit/' + staffId + '?error=password');
+            }
+            if (staffPassword.length < 4) {
+                return res.redirect('/master-admin/staff-management/employee-list/edit/' + staffId + '?error=passwordweak');
+            }
+            passwordChanged = true;
+        }
+
+        if (passwordChanged) {
+            await exe(
+                `UPDATE staff
+                 SET staff_name = ?, staff_email = ?, staff_mobile = ?, staff_role = ?, staff_status = ?, staff_password = ?
+                 WHERE staff_id = ?`,
+                [staffName, staffEmail, staffMobile || null, staffRole, staffStatus, hashPassword(staffPassword), staffId]
+            );
+        } else {
+            await exe(
+                `UPDATE staff
+                 SET staff_name = ?, staff_email = ?, staff_mobile = ?, staff_role = ?, staff_status = ?
+                 WHERE staff_id = ?`,
+                [staffName, staffEmail, staffMobile || null, staffRole, staffStatus, staffId]
+            );
+        }
+
+        var name = encodeURIComponent(staffName);
+        if (passwordChanged) {
+            return res.redirect('/master-admin/staff-management/employee-list/edit/' + staffId + '?notice=password');
+        }
+        res.redirect('/master-admin/staff-management/employee-list?notice=updated&name=' + name);
+    } catch (err) {
+        console.error(err);
+        res.redirect('/master-admin/staff-management/employee-list?notice=error');
     }
 });
 

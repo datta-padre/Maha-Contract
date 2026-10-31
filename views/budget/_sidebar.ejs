@@ -1,0 +1,63 @@
+<%
+    var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
+%>
+<aside class="sidebar bdg-sidebar">
+    <div class="bdg-topbar">
+        <a href="/budget-admin" class="bdg-topbar-brand">
+            <img class="bdg-topbar-icon" src="/images/logo.png" alt="Maha Contract">
+            <span class="bdg-topbar-title"><em>Budget</em>Admin</span>
+        </a>
+        <button type="button" class="bdg-menu-btn" aria-label="Toggle navigation" aria-expanded="false">
+            <i data-lucide="menu"></i>
+        </button>
+    </div>
+    <nav class="sidebar-nav bdg-sidebar-nav">
+        <a href="/budget-admin" class="<%= page === 'overview' ? 'active' : '' %>">
+            <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+        <a href="/budget-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
+            <i data-lucide="clock"></i> Pending Budget
+        </a>
+        <a href="/budget-admin/completed" class="<%= page === 'completed' ? 'active' : '' %>">
+            <i data-lucide="check-circle"></i> Completed Budget
+        </a>
+        <a href="/budget-admin/payments" class="<%= page === 'payments' ? 'active' : '' %>">
+            <i data-lucide="wallet"></i> Payments
+        </a>
+        <a href="/budget-admin/profile" class="<%= page === 'profile' ? 'active' : '' %>">
+            <i data-lucide="user"></i> Profile
+        </a>
+        <a href="/logout" class="logout"><i data-lucide="log-out"></i> Logout</a>
+    </nav>
+</aside>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var root = document.querySelector('.bdg-desk');
+    if (!root) return;
+
+    var btn = root.querySelector('.bdg-menu-btn');
+    var nav = root.querySelector('.bdg-sidebar-nav');
+    if (!btn || !nav) return;
+
+    function setMenuOpen(open) {
+        nav.classList.toggle('menu-open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.innerHTML = open ? '<i data-lucide="x"></i>' : '<i data-lucide="menu"></i>';
+        if (window.lucide) lucide.createIcons();
+    }
+
+    btn.addEventListener('click', function (e) {
+        setMenuOpen(!nav.classList.contains('menu-open'));
+        e.stopPropagation();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!nav.classList.contains('menu-open')) return;
+        if (!nav.contains(e.target) && !btn.contains(e.target)) setMenuOpen(false);
+    });
+
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 1024 && nav.classList.contains('menu-open')) setMenuOpen(false);
+    });
+});
+</script>

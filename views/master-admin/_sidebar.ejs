@@ -1,6 +1,7 @@
 <%
     var page = (typeof activePage !== 'undefined') ? activePage : 'overview';
     var kycOpen = (page === 'kyc' || page === 'pending' || page === 'verified' || page === 'rejected');
+    var staffOpen = (page === 'staff-management' || page === 'hire-employee' || page === 'employee-list');
 %>
 <style>
     .ma-kyc-group { margin: 0.15rem 0 0.35rem; }
@@ -18,6 +19,7 @@
         font: inherit;
         cursor: pointer;
         text-align: left;
+        transition: background 0.22s ease, color 0.22s ease;
     }
     .ma-kyc-parent:hover,
     .ma-kyc-parent.is-open {
@@ -33,19 +35,40 @@
         width: 16px !important;
         height: 16px !important;
         opacity: 0.7;
-        transition: transform 0.2s ease;
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease;
     }
-    .ma-kyc-parent.is-open .ma-kyc-chevron { transform: rotate(180deg); }
+    .ma-kyc-parent.is-open .ma-kyc-chevron {
+        transform: rotate(180deg);
+        opacity: 1;
+    }
     .ma-kyc-sub {
-        display: none;
+        display: grid;
+        grid-template-rows: 0fr;
+        margin: 0 0 0.25rem 1.15rem;
+        transition: grid-template-rows 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ma-kyc-sub.is-open {
+        grid-template-rows: 1fr;
+    }
+    .ma-kyc-sub-inner {
+        overflow: hidden;
+        display: flex;
         flex-direction: column;
         gap: 0.15rem;
-        padding: 0.15rem 0 0.35rem 0.85rem;
-        margin: 0 0 0.25rem;
+        padding-left: 0.85rem;
         border-left: 1px solid rgba(234, 179, 8, 0.25);
-        margin-left: 1.15rem;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 0.28s ease, transform 0.34s cubic-bezier(0.4, 0, 0.2, 1), padding 0.34s ease;
+        padding-top: 0;
+        padding-bottom: 0;
     }
-    .ma-kyc-sub.is-open { display: flex; }
+    .ma-kyc-sub.is-open .ma-kyc-sub-inner {
+        opacity: 1;
+        transform: translateY(0);
+        padding-top: 0.15rem;
+        padding-bottom: 0.35rem;
+    }
     .ma-kyc-sub a {
         display: flex;
         align-items: center;
@@ -55,6 +78,7 @@
         color: var(--text-muted);
         text-decoration: none;
         font-size: 0.9rem;
+        transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
     }
     .ma-kyc-sub a:hover,
     .ma-kyc-sub a.active {
@@ -62,6 +86,15 @@
         background: rgba(234, 179, 8, 0.12);
     }
     .ma-kyc-sub a i { width: 15px; height: 15px; }
+    @media (prefers-reduced-motion: reduce) {
+        .ma-kyc-parent,
+        .ma-kyc-chevron,
+        .ma-kyc-sub,
+        .ma-kyc-sub-inner,
+        .ma-kyc-sub a {
+            transition: none !important;
+        }
+    }
 </style>
 
 <aside class="sidebar">
@@ -75,14 +108,15 @@
         </a>
 
         <div class="ma-kyc-group">
-            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" data-submenu-toggle aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
                 <span>
                     <i data-lucide="shield-check"></i>
                     KYC Verification
                 </span>
                 <i data-lucide="chevron-down" class="ma-kyc-chevron"></i>
             </button>
-            <div class="ma-kyc-sub <%= kycOpen ? 'is-open' : '' %>" id="maKycSub">
+            <div class="ma-kyc-sub <%= kycOpen ? 'is-open' : '' %>" data-submenu>
+                <div class="ma-kyc-sub-inner">
                 <a href="/verify-admin/pending" class="<%= page === 'pending' ? 'active' : '' %>">
                     <i data-lucide="clock"></i> Pending
                 </a>
@@ -92,36 +126,41 @@
                 <a href="/verify-admin/rejected" class="<%= page === 'rejected' ? 'active' : '' %>">
                     <i data-lucide="x-circle"></i> Reject
                 </a>
+                </div>
             </div>
         </div>
 
         <div class="ma-kyc-group">
-            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+            <button type="button" class="ma-kyc-parent" aria-expanded="false">
                 <span>
-                    <i data-lucide="shield-check"></i>
+                    <i data-lucide="users"></i>
                     User Management
-                </span>
-            </button>
-        </div>
-        <div class="ma-kyc-group">
-            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
-                <span>
-                    <i data-lucide="shield-check"></i>
-                    Staff Management
                 </span>
             </button>
         </div>
 
         <div class="ma-kyc-group">
-            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+            <button type="button" class="ma-kyc-parent <%= staffOpen ? 'is-open' : '' %>" data-submenu-toggle aria-expanded="<%= staffOpen ? 'true' : 'false' %>">
                 <span>
-                    <i data-lucide="calculator"></i>
-                    Budget management
+                    <i data-lucide="fingerprint"></i>
+                    Staff Management
                 </span>
+                <i data-lucide="chevron-down" class="ma-kyc-chevron"></i>
             </button>
+            <div class="ma-kyc-sub <%= staffOpen ? 'is-open' : '' %>" data-submenu>
+                <div class="ma-kyc-sub-inner">
+                <a href="/master-admin/staff-management/hire-employee" class="<%= page === 'hire-employee' ? 'active' : '' %>">
+                    <i data-lucide="user-plus"></i> Hire Employee
+                </a>
+                <a href="/master-admin/staff-management/employee-list" class="<%= page === 'employee-list' ? 'active' : '' %>">
+                    <i data-lucide="clipboard-list"></i> Employee List
+                </a>
+                </div>
+            </div>
         </div>
+
         <div class="ma-kyc-group">
-            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+            <button type="button" class="ma-kyc-parent" aria-expanded="false">
                 <span>
                     <i data-lucide="package"></i>
                     Materials management
@@ -129,10 +168,18 @@
             </button>
         </div>
         <div class="ma-kyc-group">
-            <button type="button" class="ma-kyc-parent <%= kycOpen ? 'is-open' : '' %>" id="maKycToggle" aria-expanded="<%= kycOpen ? 'true' : 'false' %>">
+            <button type="button" class="ma-kyc-parent" aria-expanded="false">
                 <span>
                     <i data-lucide="file-text"></i>
                     Tender management
+                </span>
+            </button>
+        </div>
+        <div class="ma-kyc-group">
+            <button type="button" class="ma-kyc-parent" aria-expanded="false">
+                <span>
+                    <i data-lucide="user"></i>
+                    Profile
                 </span>
             </button>
         </div>
@@ -142,14 +189,16 @@
 
 <script>
 (function () {
-    var btn = document.getElementById('maKycToggle');
-    var sub = document.getElementById('maKycSub');
-    if (!btn || !sub) return;
-    btn.addEventListener('click', function () {
-        var open = sub.classList.toggle('is-open');
-        btn.classList.toggle('is-open', open);
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (window.lucide) lucide.createIcons();
+    document.querySelectorAll('[data-submenu-toggle]').forEach(function (btn) {
+        var group = btn.closest('.ma-kyc-group');
+        var sub = group ? group.querySelector('[data-submenu]') : null;
+        if (!sub) return;
+        btn.addEventListener('click', function () {
+            var open = sub.classList.toggle('is-open');
+            btn.classList.toggle('is-open', open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (window.lucide) lucide.createIcons();
+        });
     });
 })();
 </script>

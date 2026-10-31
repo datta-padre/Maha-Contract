@@ -1,44 +1,43 @@
 <%- include('../partials/header') %>
 <div class="background-animation"></div>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo"><i data-lucide="building-2" class="logo-icon"></i><span class="notranslate"><span>Build</span>Tender</span></div>
-            <nav class="sidebar-nav">
-                <a href="/vendor/dashboard" class="active"><i data-lucide="layout-dashboard"></i> Overview</a>
-                <a href="/vendor/inventory"><i data-lucide="list"></i> My Inventory</a>
-                <a href="/vendor/orders"><i data-lucide="truck"></i> Live Orders</a>
-                <a href="/vendor/payments"><i data-lucide="wallet"></i> Payments</a>
-                <a href="/vendor/profile"><i data-lucide="user"></i> Store Profile</a>
-                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+    <div class="dashboard-layout vendor-desk">
+        <%- include('_sidebar', { active: 'dashboard' }) %>
         <main class="dashboard-content">
             <header class="dashboard-header">
                 <div>
-                    <h2>Vendor Management Console</h2>
-                    <p style="color: var(--text-muted); margin-top: 0.25rem;">Monitor your materials, deliveries, and payments.</p>
+                    <h2>Vendor overview</h2>
+                    <p class="vendor-page-description">A clear view of your materials, deliveries, and payments.</p>
                 </div>
             </header>
 
-            <div class="dashboard-grid" style="margin-bottom: 2rem;">
-                <div class="stat-card">
-                    <i data-lucide="package-check" style="color: var(--primary);"></i>
-                    <h3>0</h3>
-                    <p>Listed Materials</p>
-                </div>
-                <div class="stat-card">
-                    <i data-lucide="truck" style="color: var(--accent);"></i>
-                    <h3>0</h3>
-                    <p>Live Deliveries</p>
-                </div>
-                <div class="stat-card">
-                    <i data-lucide="indian-rupee" style="color: #22c55e;"></i>
-                    <h3>0</h3>
-                    <p>Pending COD Collections</p>
-                </div>
+            <div class="vendor-shortcut-grid" aria-label="Vendor workspace shortcuts">
+                <a class="vendor-shortcut" href="/vendor/inventory">
+                    <span class="vendor-shortcut-icon"><i data-lucide="package-check" aria-hidden="true"></i></span>
+                    <span class="vendor-shortcut-copy">
+                        <strong>Manage inventory</strong>
+                        <span>Update materials, prices, and stock levels.</span>
+                    </span>
+                    <i data-lucide="arrow-up-right" class="vendor-shortcut-arrow" aria-hidden="true"></i>
+                </a>
+                <a class="vendor-shortcut" href="/vendor/orders">
+                    <span class="vendor-shortcut-icon"><i data-lucide="truck" aria-hidden="true"></i></span>
+                    <span class="vendor-shortcut-copy">
+                        <strong>Track deliveries</strong>
+                        <span>Review order and delivery assignments.</span>
+                    </span>
+                    <i data-lucide="arrow-up-right" class="vendor-shortcut-arrow" aria-hidden="true"></i>
+                </a>
+                <a class="vendor-shortcut" href="/vendor/payments">
+                    <span class="vendor-shortcut-icon"><i data-lucide="wallet" aria-hidden="true"></i></span>
+                    <span class="vendor-shortcut-copy">
+                        <strong>Review payments</strong>
+                        <span>Keep track of order payment activity.</span>
+                    </span>
+                    <i data-lucide="arrow-up-right" class="vendor-shortcut-arrow" aria-hidden="true"></i>
+                </a>
             </div>
 
-            <h3 style="margin-bottom: 1rem; font-family: 'Outfit'; color: var(--accent);">Recent Incoming Orders</h3>
+            <h3 class="vendor-section-title">Recent incoming orders</h3>
             <div class="table-container">
                 <table>
                     <thead>
@@ -51,6 +50,9 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <tr>
+                            <td colspan="5" class="vendor-table-empty">No incoming orders yet. New orders will appear here.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

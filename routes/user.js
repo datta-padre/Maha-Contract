@@ -71,36 +71,56 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password, role } = req.body;
-    const normalizedRole = String(role || "").toLowerCase();
+    const normalizedRole = role ? String(role).toLowerCase() : "";
     const hashedPassword = hashPassword(password);
 
-    if (!email || !password || !normalizedRole) {
+    if (!email || !password) {
       return res.json({ success: false, message: "Missing credentials." });
     }
 
-    // Public login cannot use admin — use /admin/login
-    if (normalizedRole === ROLES.ADMIN) {
-      return res.json({
-        success: false,
-        message: "Please use the Master Admin login page."
-      });
-    }
+    let user;
+    if (normalizedRole) {
+      if (normalizedRole === ROLES.ADMIN) {
+        return res.json({
+          success: false,
+          message: "Please use the Master Admin login page."
+        });
+      }
 
-    if (
-      [ROLES.USER, ROLES.VENDOR, ROLES.CONTRACTOR, ROLES.HOUSEOWNER].indexOf(
-        normalizedRole
-      ) === -1
-    ) {
-      return res.json({ success: false, message: "Invalid role." });
-    }
+      if (
+        [ROLES.USER, ROLES.VENDOR, ROLES.CONTRACTOR, ROLES.HOUSEOWNER].indexOf(
+          normalizedRole
+        ) === -1
+      ) {
+        return res.json({ success: false, message: "Invalid role." });
+      }
 
-    const user = await exe(
-      `SELECT * FROM users WHERE email = ? AND password_hash = ? AND role = ?`,
-      [email, hashedPassword, normalizedRole]
-    );
+      user = await exe(
+        `SELECT * FROM users
+         WHERE (email = ? OR mobile = ?)
+           AND password_hash = ?
+           AND role = ?`,
+        [email, email, hashedPassword, normalizedRole]
+      );
+    } else {
+      user = await exe(
+        `SELECT * FROM users
+         WHERE (email = ? OR mobile = ?)
+           AND password_hash = ?
+           AND role IN ('user', 'vendor', 'contractor', 'houseowner')`,
+        [email, email, hashedPassword]
+      );
+    }
 
     if (!Array.isArray(user) || user.length === 0) {
       return res.json({ success: false, message: "Invalid credentials" });
+    }
+
+    if (user.length > 1) {
+      return res.json({
+        success: false,
+        message: "Multiple accounts found for this login. Contact support."
+      });
     }
 
     const accessToken = signToken({

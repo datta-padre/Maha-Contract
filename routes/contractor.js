@@ -12,32 +12,8 @@ if (!fs.existsSync('public/kyc')) {
     fs.mkdirSync('public/kyc', { recursive: true });
 }
 
-const KYC_FEES = {
-    Advance: 5900,
-    Intermediate: 3540,
-    Final: 5635
-};
 
-const PAYMENT_ORDER = ['Advance', 'Intermediate', 'Final'];
 
-function getCompletedPayments(row) {
-    if (!row || row.payment_status !== 'paid') return [];
-    var idx = PAYMENT_ORDER.indexOf(row.contractor_payment_status);
-    if (idx < 0) return [];
-    return PAYMENT_ORDER.slice(0, idx + 1);
-}
-
-function nextPaymentType(completed) {
-    for (var i = 0; i < PAYMENT_ORDER.length; i++) {
-        if (completed.indexOf(PAYMENT_ORDER[i]) === -1) return PAYMENT_ORDER[i];
-    }
-    return null;
-}
-
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-});
 
 function saveFile(file, prefix) {
     if (!file || !file.name) return null;
@@ -81,7 +57,7 @@ function mapRowToFormData(row, user) {
         email: row.email || (user && user.email) || '',
         mobile: row.phone || (user && user.mobile) || '',
         location: row.location_link || '',
-        experience: row.experience || '',
+        experience: (row.experience === undefined || row.experience === null) ? '' : String(row.experience),
         specialization: row.specialization || '',
         availability: row.availability || 'ready',
         pricePerSqft: row.base_price_range || '',
@@ -388,8 +364,72 @@ router.post('/kyc', contractorOnly, async (req, res) => {
     }
 });
 
-router.get('/marketplace', contractorOnly, (req, res) => {
-    res.render('contractor/marketplace');
+router.get('/marketplace', contractorOnly, async (req, res) => {
+    try {
+        let kycApproved = false;
+        try {
+            const userRows = await exe(`SELECT email, mobile FROM users WHERE user_id = ?`, [req.user_id]);
+            const user = Array.isArray(userRows) && userRows[0] ? userRows[0] : null;
+            if (user) {
+                const kycRows = await exe(
+                    `SELECT contractor_kyc_status FROM contractor_kyc
+                     WHERE user_id = ? OR email = ? OR phone = ?
+                     ORDER BY kyc_id DESC LIMIT 1`,
+                    [req.user_id, user.email, user.mobile]
+                );
+                kycApproved = !!(Array.isArray(kycRows) && kycRows[0] && kycRows[0].contractor_kyc_status === 'approved');
+            }
+        } catch (e) {
+            kycApproved = false;
+        }
+
+        let tenders = [];
+        try {
+            tenders = await exe(`
+                SELECT t.tender_id,
+                       t.constructionCode,
+                       t.plotLocation,
+                       t.state,
+                       t.district,
+                       t.taluka,
+                       t.village,
+                       t.pincode,
+                       t.plotArea,
+                       t.soilType,
+                       t.bhk,
+                       t.floors,
+                       t.budget,
+                       t.estimated_cost,
+                       t.constructionTime,
+                       t.materialsProvided,
+                       t.finalizedPlan,
+                       t.ancillary_requirements,
+                       t.externalWorks,
+                       t.boundaryWallType,
+                       t.specialInstructions,
+                       t.tender_status,
+                       t.created_at
+                FROM tenders t
+                WHERE t.tender_status = 'published'
+                ORDER BY t.tender_id DESC
+            `);
+        } catch (e) {
+            tenders = [];
+        }
+
+        res.render('contractor/marketplace', {
+            tenders: Array.isArray(tenders) ? tenders : [],
+            kycApproved: kycApproved,
+            error: req.query.error || ''
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('contractor/marketplace', {
+            tenders: [],
+            kycApproved: false,
+            error: 'Could not load live tenders.'
+        });
+    }
 });
 router.get('/materials', contractorOnly, async (req, res) => {
     var sql = `SELECT * FROM materials`;
@@ -399,6 +439,9 @@ router.get('/materials', contractorOnly, async (req, res) => {
 });
 router.get('/bids', contractorOnly, (req, res) => {
     res.render('contractor/bids');
+});
+router.get('/live-tenders', contractorOnly, (req, res) => {
+    res.render('contractor/live-tenders');
 });
 router.get('/profile', contractorOnly, (req, res) => {
     res.render('contractor/profile');
