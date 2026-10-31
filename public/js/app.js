@@ -373,9 +373,52 @@ function initLanguageSwitcher() {
     document.body.appendChild(wrapper);
 }
 
+function initVendorNavigation() {
+    const sidebar = document.querySelector('.vendor-sidebar');
+    const toggle = sidebar && sidebar.querySelector('.vendor-menu-toggle');
+    const nav = sidebar && sidebar.querySelector('.vendor-sidebar-nav');
+    if (!sidebar || !toggle || !nav) return;
+
+    const setMenuOpen = (isOpen, restoreFocus) => {
+        sidebar.classList.toggle('menu-open', isOpen);
+        document.body.classList.toggle('vendor-nav-open', isOpen);
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+        toggle.innerHTML = `<i data-lucide="${isOpen ? 'x' : 'menu'}" aria-hidden="true"></i>`;
+        if (window.lucide) lucide.createIcons();
+        if (isOpen) {
+            const activeLink = nav.querySelector('a.active');
+            (activeLink || nav.querySelector('a'))?.focus();
+        } else if (restoreFocus) {
+            toggle.focus();
+        }
+    };
+
+    toggle.addEventListener('click', () => {
+        setMenuOpen(toggle.getAttribute('aria-expanded') !== 'true', false);
+    });
+
+    nav.addEventListener('click', (event) => {
+        if (event.target.closest('a')) setMenuOpen(false, false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && sidebar.classList.contains('menu-open')) {
+            setMenuOpen(false, true);
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && sidebar.classList.contains('menu-open')) {
+            setMenuOpen(false, false);
+        }
+    });
+}
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initThemeToggle();
+        initVendorNavigation();
         if (!document.body.classList.contains('login-page-body')) {
             initLanguageSwitcher();
         }
@@ -383,6 +426,7 @@ if (document.readyState === 'loading') {
     });
 } else {
     initThemeToggle();
+    initVendorNavigation();
     if (!document.body.classList.contains('login-page-body')) {
         initLanguageSwitcher();
     }

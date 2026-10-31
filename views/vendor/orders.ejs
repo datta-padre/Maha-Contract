@@ -1,25 +1,21 @@
 <%- include('../partials/header') %>
 <div class="background-animation"></div>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo sidebar-logo"><i data-lucide="package-search" class="logo-icon"></i><span>Material</span>Hub</div>
-            <nav class="sidebar-nav">
-                <a href="/vendor/dashboard"><i data-lucide="layout-dashboard"></i> Overview</a>
-                <a href="/vendor/inventory"><i data-lucide="list"></i> My Inventory</a>
-                <a href="/vendor/orders" class="active"><i data-lucide="truck"></i> Live Orders</a>
-                <a href="/vendor/payments"><i data-lucide="wallet"></i> Payments</a>
-                <a href="/vendor/profile"><i data-lucide="user"></i> Profile </a>
-                <a href="/" class="logout"><i data-lucide="log-out"></i> Logout</a>
-            </nav>
-        </aside>
+    <div class="dashboard-layout vendor-desk">
+        <%- include('_sidebar', { active: 'orders' }) %>
         <main class="dashboard-content">
             <header class="dashboard-header">
-                <div><h2>Live Incoming Orders</h2></div>
+                <div>
+                    <h2>Live orders</h2>
+                    <p class="vendor-page-description">Track new orders and delivery assignments for your store.</p>
+                </div>
             </header>
-            <div class="empty-state">
-                <i data-lucide="truck" style="width: 48px; height: 48px; margin-bottom: 1rem; color: var(--surface-border);"></i>
-                <h3>No Deliveries Assigned</h3>
-                <p>Contractors in your 30km radius have not placed any orders yet.</p>
+            <div class="empty-state vendor-empty-state">
+                <i data-lucide="truck" aria-hidden="true"></i>
+                <h3>No deliveries assigned</h3>
+                <p>When a contractor places an order in your service area, its status and delivery details will appear here.</p>
+                <a class="vendor-empty-action" href="/vendor/inventory">
+                    <i data-lucide="package" aria-hidden="true"></i> Review your inventory
+                </a>
             </div>
         </main>
     </div>

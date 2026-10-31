@@ -1,0 +1,19 @@
+<aside class="sidebar vendor-sidebar" aria-label="Vendor workspace">
+    <div class="logo sidebar-logo vendor-sidebar-header">
+        <a class="vendor-brand" href="/vendor/dashboard" aria-label="Maha Contract vendor workspace">
+            <img src="/images/logo.png" alt="">
+            <span class="notranslate"><span>Maha</span> Contract</span>
+        </a>
+        <button class="vendor-menu-toggle" type="button" aria-controls="vendorNavigation" aria-expanded="false" aria-label="Open navigation menu">
+            <i data-lucide="menu" aria-hidden="true"></i>
+        </button>
+    </div>
+    <nav class="sidebar-nav vendor-sidebar-nav" id="vendorNavigation" aria-label="Vendor navigation">
+        <a href="/vendor/dashboard" class="<%= active === 'dashboard' ? 'active' : '' %>" <%= active === 'dashboard' ? 'aria-current="page"' : '' %>><i data-lucide="layout-dashboard" aria-hidden="true"></i><span>Overview</span></a>
+        <a href="/vendor/inventory" class="<%= active === 'inventory' ? 'active' : '' %>" <%= active === 'inventory' ? 'aria-current="page"' : '' %>><i data-lucide="list" aria-hidden="true"></i><span>My Inventory</span></a>
+        <a href="/vendor/orders" class="<%= active === 'orders' ? 'active' : '' %>" <%= active === 'orders' ? 'aria-current="page"' : '' %>><i data-lucide="truck" aria-hidden="true"></i><span>Live Orders</span></a>
+        <a href="/vendor/payments" class="<%= active === 'payments' ? 'active' : '' %>" <%= active === 'payments' ? 'aria-current="page"' : '' %>><i data-lucide="wallet" aria-hidden="true"></i><span>Payments</span></a>
+        <a href="/vendor/profile" class="<%= active === 'profile' ? 'active' : '' %>" <%= active === 'profile' ? 'aria-current="page"' : '' %>><i data-lucide="user-round" aria-hidden="true"></i><span>My Profile</span></a>
+        <a href="/logout" class="logout"><i data-lucide="log-out" aria-hidden="true"></i><span>Logout</span></a>
+    </nav>
+</aside>
